@@ -38,13 +38,13 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 
 	l.svcCtx.WSHub.Broadcast <- []byte(data)
 
-	// // 1. 构建点
-	// point, err := l.svcCtx.Dao.BuildPoint(req)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// // 2. 写入点
-	// _ = l.svcCtx.Dao.AddPoint(point)
+	// 1. 构建点
+	point, err := l.svcCtx.Dao.BuildPoint(req)
+	if err != nil {
+		return nil, err
+	}
+	// 2. 写入点
+	_ = l.svcCtx.Dao.AddPoint(point)
 
 	resp = &types.DroneStatusResp{
 		Code: 200,

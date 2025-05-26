@@ -1,9 +1,12 @@
 package svc
 
 import (
+	"context"
 	"drone-api/internal/config"
 	"drone-api/internal/dao"
 	"drone-api/internal/websocket"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 type ServiceContext struct {
@@ -15,20 +18,20 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	hub := websocket.NewHub()
 	go hub.Run()
-	// URL := "http://" + c.InfluxDBConfig.Host + ":" + c.InfluxDBConfig.Port
-	// options := influxdb2.DefaultOptions().
-	// 	SetBatchSize(c.InfluxDBConfig.BatchSize).               // 批量大小
-	// 	SetFlushInterval(c.InfluxDBConfig.FlushInterval * 1000) // 毫秒
-	// 	// SetPrecision(time.Second)
-	// client := influxdb2.NewClientWithOptions(URL, c.InfluxDBConfig.Token, options)
+	URL := "http://" + c.InfluxDBConfig.Host + ":" + c.InfluxDBConfig.Port
+	options := influxdb2.DefaultOptions().
+		SetBatchSize(c.InfluxDBConfig.BatchSize).               // 批量大小
+		SetFlushInterval(c.InfluxDBConfig.FlushInterval * 1000) // 毫秒
+		// SetPrecision(time.Second)
+	client := influxdb2.NewClientWithOptions(URL, c.InfluxDBConfig.Token, options)
 
-	// _, err := client.Ping(context.Background())
-	// if err != nil {
-	// 	panic("InfluxDB connect error: " + err.Error())
-	// }
+	_, err := client.Ping(context.Background())
+	if err != nil {
+		panic("InfluxDB connect error: " + err.Error())
+	}
 	return &ServiceContext{
 		Config: c,
 		WSHub:  hub,
-		// Dao:    dao.NewInfluxDao(nil, c.InfluxDBConfig.Org, c.InfluxDBConfig.Bucket),
+		Dao:    dao.NewInfluxDao(client, c.InfluxDBConfig.Org, c.InfluxDBConfig.Bucket),
 	}
 }

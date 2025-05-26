@@ -20,6 +20,9 @@ FROM alpine:latest
 
 WORKDIR /app
 
+# 部署时可注释掉(仅调试用)
+RUN mkdir -p /app/log && chmod -R 777 /app/log
+
 # 拷贝配置文件和二进制文件
 COPY --from=builder /app/app .
 COPY --from=builder /app/etc ./etc
@@ -32,5 +35,5 @@ RUN apk add --no-cache tzdata \
 # 替换为实际的端口
 EXPOSE 19999
 
-CMD ["./app", "-f", "etc/drone-api.yaml"]
+CMD ["sh", "-c", "./app -f etc/drone-api.yaml > /app/log/app.log 2>&1"]
 

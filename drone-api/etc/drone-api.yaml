@@ -2,11 +2,11 @@ Name: drone-api
 Host: 0.0.0.0
 Port: 19999
 InfluxDBConfig:
-  Host: 172.25.74.79
+  Host: "influxdb"
   Port: "8086"
   User: admin
   Password: "12345678"
-  Token: wp-tK0BKAx693FyWtedXb7LCH6GSQXQs6cof-niW3lDoABVcir7BRVHSwXUDFEjuqlZpVS8PKINXdDscLhiyfg==
+  Token: tK0BKAx693FyWtedXb7LCH6GSQXQs6cof-niW3lDoABVcir7BRVHSwXUDFEjuqlZpVS8PKINXdDscLhiyfg==
   Bucket: drone_data
   Org: sysu
   RetentionPolicy: autogen

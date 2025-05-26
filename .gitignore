@@ -1,3 +1,5 @@
 /drone-api/drone
+/drone-api/log
 /drone-client/client
+/influxDB/influxdb2
 

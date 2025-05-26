@@ -1,15 +1,17 @@
 services:
-  gozero:
+  drone-service:
     build: .
     container_name: drone-service
     ports:
       - "19999:19999"
+    volumes:
+      - ./log:/app/log  # 数据持久化目录
     environment:
       - TZ=Asia/Shanghai   # 可选：设置时区
     networks:
-      - gozero-network
+      - my-network
     restart: always
 
 networks:
-  gozero-network:
-    driver: bridge
+  my-network:
+    external: true  # 声明使用外部网络
