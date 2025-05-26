@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无人机飞行监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 8px;
+            background: #f8f9fa;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        #map-scene {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .title {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(8px);
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            z-index: 10;
+            backdrop-filter: blur(8px);
+            max-width: 250px;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 12px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .info-panel p {
+            margin: 8px 0;
+            color: #34495e;
+            font-size: 14px;
+        }
+        
+        .info-panel.no-selection {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        
+        .stats-container {
+            height: 180px;
+            border-radius: 12px;
+            padding: 15px 20px;
+            background-color: #fff;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .connection-status {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .connection-status.connected {
+            color: #27ae60;
+        }
+        
+        .connection-status.disconnected {
+            color: #e74c3c;
+        }
+        
+        .connection-status.connecting {
+            color: #f39c12;
+        }
+        
+        .stats-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            padding-bottom: 8px;
+            z-index: 5;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-auto-rows: minmax(60px, auto);
+            gap: 10px;
+            padding-bottom: 5px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-title {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 4px;
+            color: #2c3e50;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            z-index: 10;
+            display: flex;
+            gap: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #2c3e50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 80px;
+        }
+
+        .control-btn:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn.reset {
+            background: #e74c3c;
+        }
+
+        .control-btn.reset:hover {
+            background: #c0392b;
+        }
+
+        .control-btn.toggle {
+            background: #16a085;
+        }
+        
+        .control-btn.toggle.active {
+            background: #1abc9c;
+            box-shadow: 0 0 8px rgba(26, 188, 156, 0.6);
+        }
+        
+        .control-btn.toggle:hover {
+            background: #1abc9c;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            font-size: 18px;
+            backdrop-filter: blur(8px);
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                height: 280px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-auto-rows: minmax(60px, auto);
+                gap: 8px;
+            }
+            
+            .stat-card {
+                padding: 8px 5px;
+            }
+            
+            .stat-title {
+                font-size: 11px;
+            }
+            
+            .stat-value {
+                font-size: 14px;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+        }
+
+        .drone-marker {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .drone-icon {
+            width: 32px;
+            height: 32px;
+            transition: transform 0.3s ease;
+        }
+
+        /* 隐藏高度显示 */
+        .altitude-label, .altitude-value, .altitude-unit {
+            display: none;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+    </style>
+    <!-- 加载高德地图API，添加必要的插件 -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=0ab0f0b45664f7b5d7f3030df28d12f0&plugin=AMap.Scale,AMap.ToolBar,AMap.MapType,Map3D,AMap.Buildings"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="map-container">
+            <div class="title">无人机飞行监控</div>
+            <div id="map-scene"></div>
+            <div class="loading" id="loading">正在加载3D地图...</div>
+            <div class="connection-status disconnected" id="connection-status">连接状态: 未连接</div>
+            <div class="info-panel no-selection" id="info-panel">
+                <h3>无人机状态</h3>
+                <p id="selection-hint">点击地图上的无人机图标查看详细信息</p>
+                <div id="drone-info" style="display: none;">
+                    <p>速度: <span id="speed-info">0</span> m/s</p>
+                    <p>海拔高度: <span id="altitude-info">0</span> m</p>
+                    <p>对地高度: <span id="height-info">0</span> m</p>
+                    <p>经度: <span id="longitude">0</span>°</p>
+                    <p>纬度: <span id="latitude">0</span>°</p>
+                    <p>无人机ID: <span id="uav-id">-</span></p>
+                </div>
+            </div>
+            <div class="control-panel">
+                <div class="control-group">
+                    <button class="control-btn" id="rotateLeft">←旋转</button>
+                    <button class="control-btn reset" id="resetRotation">重置</button>
+                    <button class="control-btn" id="rotateRight">旋转→</button>
+                </div>
+                <div class="control-group">
+                    <button class="control-btn" id="pitchUp">⋀视角</button>
+                    <button class="control-btn" id="pitchDown">⋁视角</button>
+                </div>
+                <div class="control-group">
+                    <button class="control-btn" id="zoomIn">放大</button>
+                    <button class="control-btn" id="zoomOut">缩小</button>
+                </div>
+                <div class="control-group">
+                    <button class="control-btn toggle active" id="togglePaths">隐藏轨迹</button>
+                </div>
+            </div>
+        </div>
+        <div class="stats-container">
+            <div class="stats-title">飞行统计数据</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">无人机数量</div>
+                    <div class="stat-value" id="drone-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">飞行次数</div>
+                    <div class="stat-value" id="flight-count">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let droneMap; // 全局变量以便于在事件处理程序中访问
+        
+        window.onload = function() {
+            if (typeof AMap === 'undefined') {
+                console.error('高德地图API加载失败');
+                return;
+            }
+
+            class DroneMap3D {
+                constructor(containerId) {
+                    // 创建3D地图实例，设置为中山大学深圳校区（光明校区）位置
+                    this.map = new AMap.Map(containerId, {
+                        zoom: 17.5,
+                        center: [113.953099, 22.800721],
+                        viewMode: '3D',
+                        pitch: 45,
+                        rotation: -15,
+                        mapStyle: 'amap://styles/1e65d329854a3cf37c1844b067c19f84',
+                        features: ['bg', 'building', 'point', 'road'],
+                        buildingAnimation: true,
+                        expandZoomRange: true,
+                        zooms: [3, 20]
+                    });
+
+                    // 添加3D建筑物图层
+                    const buildings = new AMap.Buildings({
+                        zIndex: 130,
+                        merge: false,
+                        sort: false,
+                        zooms: [17, 20]
+                    });
+                    this.map.add(buildings);
+
+                    // 添加地图控件
+                    this.map.addControl(new AMap.Scale());
+                    this.map.addControl(new AMap.ToolBar({
+                        position: 'RB'
+                    }));
+                    this.map.addControl(new AMap.MapType({
+                        defaultType: 0,
+                        position: 'RB'
+                    }));
+
+                    // 初始化旋转角度
+                    this.currentRotation = -15;
+                    
+                    // 存储所有无人机数据的集合
+                    this.droneCollection = new Map();
+                    
+                    // 存储已收到的recordId集合，用于统计飞行次数
+                    this.recordIdSet = new Set();
+                    
+                    // 存储飞行路线数据，按recordId分组
+                    this.flightPaths = new Map();
+                    
+                    // 存储飞行路线对象，用于绘制和更新路线
+                    this.pathPolylines = new Map();
+                    
+                    // 当前选中的无人机ID
+                    this.selectedDroneId = null;
+                    
+                    // 设置轨迹显示状态 - 默认为显示
+                    this.showPaths = true;
+                    
+                    // 添加按钮事件监听
+                    this.initButtonControl();
+
+                    // 等待地图加载完成
+                    this.map.on('complete', () => {
+                        document.getElementById('loading').style.display = 'none';
+                        this.connectWebSocket();
+                    });
+                }
+
+                // 替换键盘控制为按钮控制
+                initButtonControl() {
+                    // 左旋转按钮
+                    document.getElementById('rotateLeft').addEventListener('click', () => {
+                        this.currentRotation -= 5;
+                        this.currentRotation = ((this.currentRotation + 180) % 360) - 180;
+                        this.map.setRotation(this.currentRotation);
+                    });
+
+                    // 右旋转按钮
+                    document.getElementById('rotateRight').addEventListener('click', () => {
+                        this.currentRotation += 5;
+                        this.currentRotation = ((this.currentRotation + 180) % 360) - 180;
+                        this.map.setRotation(this.currentRotation);
+                    });
+
+                    // 重置按钮
+                    document.getElementById('resetRotation').addEventListener('click', () => {
+                        this.currentRotation = -15;
+                        this.map.setRotation(this.currentRotation);
+                        this.map.setPitch(45);  // 重置俯仰角
+                        this.map.setZoom(17.5); // 重置缩放级别
+                    });
+
+                    // 添加俯仰角控制
+                    document.getElementById('pitchUp').addEventListener('click', () => {
+                        const currentPitch = this.map.getPitch();
+                        const newPitch = Math.min(currentPitch + 5, 80);  // 最大俯仰角限制在80度
+                        this.map.setPitch(newPitch);
+                    });
+
+                    document.getElementById('pitchDown').addEventListener('click', () => {
+                        const currentPitch = this.map.getPitch();
+                        const newPitch = Math.max(currentPitch - 5, 0);  // 最小俯仰角限制在0度
+                        this.map.setPitch(newPitch);
+                    });
+
+                    // 添加缩放控制
+                    document.getElementById('zoomIn').addEventListener('click', () => {
+                        const currentZoom = this.map.getZoom();
+                        const newZoom = Math.min(currentZoom + 0.5, 20);  // 最大缩放级别限制在20
+                        this.map.setZoom(newZoom);
+                    });
+
+                    document.getElementById('zoomOut').addEventListener('click', () => {
+                        const currentZoom = this.map.getZoom();
+                        const newZoom = Math.max(currentZoom - 0.5, 3);  // 最小缩放级别限制在3
+                        this.map.setZoom(newZoom);
+                    });
+                    
+                    // 添加飞行路径显示/隐藏控制
+                    const togglePathsBtn = document.getElementById('togglePaths');
+                    
+                    togglePathsBtn.addEventListener('click', () => {
+                        // 切换显示状态
+                        this.showPaths = !this.showPaths;
+                        
+                        // 更新按钮文本和样式
+                        if (this.showPaths) {
+                            togglePathsBtn.textContent = '隐藏轨迹';
+                            togglePathsBtn.classList.add('active');
+                        } else {
+                            togglePathsBtn.textContent = '显示轨迹';
+                            togglePathsBtn.classList.remove('active');
+                        }
+                        
+                        // 更新所有路径的可见性
+                        this.toggleAllPathsVisibility(this.showPaths);
+                    });
+                }
+
+                simulateDroneData() {
+                    // 由于现在从后端接收多架无人机的数据，此方法不再需要
+                    // 这里可以增加一些默认数据，仅在开发环境下使用
+                    console.log('准备接收无人机数据...');
+                }
+                
+                connectWebSocket() {
+                    // 创建WebSocket连接
+                    this.socket = new WebSocket('ws://localhost:19999/api/ws');
+                    
+                    // 更新连接状态为"连接中"
+                    const statusEl = document.getElementById('connection-status');
+                    statusEl.className = 'connection-status connecting';
+                    statusEl.textContent = '连接状态: 连接中...';
+                    
+                    // 连接建立时的处理
+                    this.socket.onopen = () => {
+                        console.log('WebSocket连接已建立');
+                        statusEl.className = 'connection-status connected';
+                        statusEl.textContent = '连接状态: 已连接';
+                        
+                        // 设置心跳检测，每30秒发送一次心跳
+                        this.heartbeatInterval = setInterval(() => {
+                            if (this.socket.readyState === WebSocket.OPEN) {
+                                this.socket.send(JSON.stringify({ type: 'heartbeat' }));
+                            }
+                        }, 30000);
+                    };
+                    
+                    // 接收到消息时的处理
+                    this.socket.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            // 检查是否是心跳响应
+                            if (data.type === 'heartbeat') {
+                                console.log('收到心跳响应');
+                                return;
+                            }
+                            this.processDroneData(data);
+                        } catch (error) {
+                            console.error('解析WebSocket数据错误:', error);
+                        }
+                    };
+                    
+                    // 连接关闭时的处理
+                    this.socket.onclose = () => {
+                        console.log('WebSocket连接已关闭，尝试重新连接...');
+                        statusEl.className = 'connection-status disconnected';
+                        statusEl.textContent = '连接状态: 已断开，正在重连...';
+                        
+                        // 清除心跳定时器
+                        if (this.heartbeatInterval) {
+                            clearInterval(this.heartbeatInterval);
+                        }
+                        
+                        // 2秒后尝试重新连接
+                        setTimeout(() => this.connectWebSocket(), 2000);
+                    };
+                    
+                    // 连接错误时的处理
+                    this.socket.onerror = (error) => {
+                        console.error('WebSocket连接错误:', error);
+                        statusEl.className = 'connection-status disconnected';
+                        statusEl.textContent = '连接状态: 连接错误';
+                    };
+                }
+                
+                processDroneData(data) {
+                    // 根据API文档中的数据结构进行处理
+                    console.log('收到无人机数据:', data);
+                    
+                    // 检查数据是否有效
+                    if (!data || typeof data !== 'object' || !data.uavId) {
+                        console.error('接收到无效的无人机数据');
+                        return;
+                    }
+                    
+                    // 注意：后端的经纬度是整数，需要转换为浮点数并除以适当的因子
+                    const droneData = {
+                        id: data.uavId,                     // 无人机ID作为唯一标识
+                        longitude: data.longitude / 10000000, // 将整数转换为度数
+                        latitude: data.latitude / 10000000,   // 将经度转换为度数
+                        altitude: data.altitude,             // 海拔高度
+                        height: data.height,                 // 对地高度
+                        heading: data.course,                // 无人机朝向角度
+                        speed: this.calculateSpeed(data),    // 计算速度
+                        flightTime: data.flightTime,         // 飞行时间
+                        uavType: data.uavType,               // 无人机类型
+                        recordId: data.recordId,             // 记录ID
+                        timeStamp: data.timeStamp,           // 时间戳
+                        totalDistance: 0,                    // 初始化累计飞行距离
+                        battery: 100                         // 初始化模拟电池电量
+                    };
+                    
+                    // 检查是否是新的recordId
+                    if (data.recordId && !this.recordIdSet.has(data.recordId)) {
+                        // 清除之前所有的飞行路径，只保留当前正在执行的
+                        this.clearAllPaths();
+                        
+                        // 添加新的recordId到集合
+                        this.recordIdSet.add(data.recordId);
+                        
+                        // 初始化新的飞行路径数组
+                        this.flightPaths.set(data.recordId, []);
+                        
+                        // 更新统计数据
+                        this.updateStatsPanel();
+                    }
+                    
+                    // 添加当前位置到飞行路径
+                    if (data.recordId) {
+                        const path = this.flightPaths.get(data.recordId) || [];
+                        const newPoint = [droneData.longitude, droneData.latitude];
+                        
+                        // 检查是否有效点位，避免添加重复点或异常点
+                        const lastPoint = path.length > 0 ? path[path.length - 1] : null;
+                        if (!lastPoint || 
+                            (lastPoint[0] !== newPoint[0] || lastPoint[1] !== newPoint[1])) {
+                            path.push(newPoint);
+                            this.flightPaths.set(data.recordId, path);
+                            
+                            // 更新或创建路径线
+                            this.updateFlightPath(data.recordId, path);
+                        }
+                    }
+                    
+                    // 计算总飞行距离
+                    if (this.droneCollection.has(data.uavId)) {
+                        const oldData = this.droneCollection.get(data.uavId);
+                        
+                        // 使用Haversine公式计算球面距离
+                        const R = 6371000; // 地球半径，单位米
+                        const oldLat = oldData.latitude;
+                        const oldLon = oldData.longitude;
+                        const newLat = droneData.latitude;
+                        const newLon = droneData.longitude;
+                        
+                        const dLat = (newLat - oldLat) * Math.PI / 180;
+                        const dLon = (newLon - oldLon) * Math.PI / 180;
+                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                Math.cos(oldLat * Math.PI / 180) * Math.cos(newLat * Math.PI / 180) * 
+                                Math.sin(dLon/2) * Math.sin(dLon/2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                        const distance = R * c; // 单位：米
+                        
+                        // 如果距离合理则累加，否则保持原值
+                        if (distance >= 0 && distance < 100) { // 避免异常数据，限制单次移动距离
+                            droneData.totalDistance = oldData.totalDistance + distance;
+                        } else {
+                            droneData.totalDistance = oldData.totalDistance;
+                        }
+                        
+                        // 模拟电池电量 - 根据飞行时间缓慢减少
+                        droneData.battery = Math.max(0, 100 - Math.floor(data.flightTime / 60)); // 每飞行60秒减少1%电量
+                    }
+                    
+                    // 将无人机数据存入集合
+                    this.droneCollection.set(data.uavId, droneData);
+                    
+                    // 更新或创建无人机标记
+                    this.updateOrCreateDroneMarker(droneData);
+                    
+                    // 如果是当前选中的无人机，更新信息面板
+                    if (this.selectedDroneId === data.uavId) {
+                        this.updateInfoPanel(droneData);
+                    }
+                    
+                    // 更新统计数据
+                    this.updateStatsPanel();
+                }
+                
+                // 更新飞行路径
+                updateFlightPath(recordId, path) {
+                    // 为每个recordId生成唯一的颜色
+                    const getColorByRecordId = (id) => {
+                        // 简单的哈希算法生成颜色
+                        let hash = 0;
+                        for (let i = 0; i < id.length; i++) {
+                            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        const hue = Math.abs(hash % 360);
+                        return `hsl(${hue}, 100%, 50%)`;
+                    };
+                    
+                    // 检查是否已存在路径线
+                    if (this.pathPolylines.has(recordId)) {
+                        // 更新已有路径线
+                        const polyline = this.pathPolylines.get(recordId);
+                        polyline.setPath(path);
+                    } else {
+                        // 创建新的路径线
+                        const color = getColorByRecordId(recordId);
+                        const polyline = new AMap.Polyline({
+                            path: path,
+                            strokeColor: color,
+                            strokeWeight: 4,
+                            strokeOpacity: 0.8,
+                            zIndex: 100,
+                            strokeStyle: 'solid',
+                            strokeDasharray: [10, 5],
+                            visible: this.showPaths // 根据当前设置决定是否可见
+                        });
+                        
+                        this.map.add(polyline);
+                        
+                        // 如果当前是隐藏轨迹模式，则立即隐藏这条新轨迹
+                        if (!this.showPaths) {
+                            polyline.hide();
+                        }
+                        
+                        this.pathPolylines.set(recordId, polyline);
+                    }
+                }
+                
+                // 切换所有路径的可见性
+                toggleAllPathsVisibility(visible) {
+                    if (this.pathPolylines) {
+                        this.pathPolylines.forEach(polyline => {
+                            if (visible) {
+                                polyline.show();
+                            } else {
+                                polyline.hide();
+                            }
+                        });
+                    }
+                }
+                
+                // 清除所有飞行路径
+                clearAllPaths() {
+                    if (this.pathPolylines) {
+                        this.pathPolylines.forEach(polyline => {
+                            this.map.remove(polyline);
+                        });
+                        this.pathPolylines.clear();
+                    }
+                    this.flightPaths.clear();
+                }
+                
+                // 更新或创建无人机标记
+                updateOrCreateDroneMarker(data) {
+                    if (!this.droneMarkers) {
+                        this.droneMarkers = new Map();
+                    }
+                    
+                    const { id, longitude, latitude, heading } = data;
+                    
+                    if (this.droneMarkers.has(id)) {
+                        // 更新已有标记位置
+                        const marker = this.droneMarkers.get(id);
+                        marker.setPosition([longitude, latitude]);
+                        marker.setAngle(heading);
+                    } else {
+                        // 创建新的无人机标记
+                        const droneIcon = new AMap.Icon({
+                            size: new AMap.Size(32, 32),
+                            image: './drone-icon.svg',
+                            imageSize: new AMap.Size(32, 32)
+                        });
+                        
+                        const marker = new AMap.Marker({
+                            position: [longitude, latitude],
+                            icon: droneIcon,
+                            offset: new AMap.Pixel(-16, -16),
+                            autoRotation: true,
+                            angle: heading,
+                            anchor: 'center',
+                            zIndex: 150,
+                            extData: { droneId: id }
+                        });
+                        
+                        // 添加点击事件，显示对应无人机信息
+                        marker.on('click', (e) => {
+                            const droneId = e.target.getExtData().droneId;
+                            this.selectedDroneId = droneId;
+                            if (this.droneCollection.has(droneId)) {
+                                const droneData = this.droneCollection.get(droneId);
+                                this.updateInfoPanel(droneData);
+                            }
+                        });
+                        
+                        this.map.add(marker);
+                        this.droneMarkers.set(id, marker);
+                    }
+                }
+                
+                // 计算无人机速度
+                calculateSpeed(data) {
+                    if (this.droneCollection.has(data.uavId)) {
+                        const oldData = this.droneCollection.get(data.uavId);
+                        
+                        // 简单距离计算 - 修正坐标换算
+                        // 经纬度值已经在processDroneData中被除以10000000，这里使用原始值计算
+                        const oldLon = oldData.longitude;
+                        const oldLat = oldData.latitude;
+                        const newLon = data.longitude / 10000000;
+                        const newLat = data.latitude / 10000000;
+                        
+                        // 使用Haversine公式计算两点之间的球面距离
+                        const R = 6371000; // 地球半径，单位米
+                        const dLat = (newLat - oldLat) * Math.PI / 180;
+                        const dLon = (newLon - oldLon) * Math.PI / 180;
+                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                Math.cos(oldLat * Math.PI / 180) * Math.cos(newLat * Math.PI / 180) * 
+                                Math.sin(dLon/2) * Math.sin(dLon/2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                        const distance = R * c; // 单位：米
+                        
+                        // 计算时间差（秒）
+                        const currentTime = new Date(data.timeStamp); // RFC3339格式
+                        const lastTime = new Date(oldData.timeStamp);
+                        const timeDiff = (currentTime - lastTime) / 1000;
+                        
+                        // 判断时间差和距离是否有效
+                        if (timeDiff > 0 && distance >= 0) {
+                            // 过滤异常值，如果速度超过100m/s，可能是数据异常
+                            const speed = distance / timeDiff;
+                            return speed > 100 ? 0 : speed; // 单位：m/s
+                        }
+                    }
+                    
+                    return 0; // 默认速度
+                }
+                
+                updateStatsPanel() {
+                    // 更新统计面板 - 显示无人机数量和飞行次数
+                    document.getElementById('drone-count').textContent = this.droneCollection.size;
+                    document.getElementById('flight-count').textContent = this.recordIdSet.size;
+                }
+                
+                updateInfoPanel(data) {
+                    // 更新信息面板 - 显示选中无人机的详细信息
+                    const infoPanel = document.getElementById('info-panel');
+                    const selectionHint = document.getElementById('selection-hint');
+                    const droneInfo = document.getElementById('drone-info');
+                    
+                    // 显示无人机信息，隐藏选择提示
+                    infoPanel.classList.remove('no-selection');
+                    selectionHint.style.display = 'none';
+                    droneInfo.style.display = 'block';
+                    
+                    // 更新信息面板内容
+                    document.getElementById('speed-info').textContent = data.speed.toFixed(2);
+                    document.getElementById('altitude-info').textContent = data.altitude.toFixed(2);
+                    document.getElementById('height-info').textContent = data.height.toFixed(2);
+                    document.getElementById('longitude').textContent = data.longitude.toFixed(6);
+                    document.getElementById('latitude').textContent = data.latitude.toFixed(6);
+                    document.getElementById('uav-id').textContent = data.id || '-';
+                    
+                    // 显示更多无人机相关信息
+                    // 检查是否已经添加了额外信息项
+                    if (!document.getElementById('uav-type-info')) {
+                        // 添加无人机类型
+                        const typeInfo = document.createElement('p');
+                        typeInfo.innerHTML = `无人机类型: <span id="uav-type-info">-</span>`;
+                        droneInfo.appendChild(typeInfo);
+                        
+                        // 添加飞行时间
+                        const flightTimeInfo = document.createElement('p');
+                        flightTimeInfo.innerHTML = `飞行时间: <span id="flight-time-info">00:00:00</span>`;
+                        droneInfo.appendChild(flightTimeInfo);
+                        
+                        // 添加总飞行距离
+                        const distanceInfo = document.createElement('p');
+                        distanceInfo.innerHTML = `飞行距离: <span id="distance-info">0 m</span>`;
+                        droneInfo.appendChild(distanceInfo);
+                        
+                        // 添加电池电量
+                        const batteryInfo = document.createElement('p');
+                        batteryInfo.innerHTML = `电池电量: <span id="battery-info">100%</span>`;
+                        droneInfo.appendChild(batteryInfo);
+                    }
+                    
+                    // 更新额外信息
+                    document.getElementById('uav-type-info').textContent = data.uavType || '-';
+                    
+                    // 格式化飞行时间
+                    const hours = Math.floor(data.flightTime / 3600);
+                    const minutes = Math.floor((data.flightTime % 3600) / 60);
+                    const seconds = data.flightTime % 60;
+                    const formattedTime = 
+                        String(hours).padStart(2, '0') + ':' + 
+                        String(minutes).padStart(2, '0') + ':' + 
+                        String(seconds).padStart(2, '0');
+                    document.getElementById('flight-time-info').textContent = formattedTime;
+                    
+                    // 格式化飞行距离
+                    let distanceText = '';
+                    if (data.totalDistance >= 1000) {
+                        distanceText = (data.totalDistance / 1000).toFixed(2) + ' km';
+                    } else {
+                        distanceText = Math.round(data.totalDistance) + ' m';
+                    }
+                    document.getElementById('distance-info').textContent = distanceText;
+                    
+                    // 更新电池电量
+                    document.getElementById('battery-info').textContent = data.battery + '%';
+                }
+                
+                // 清理方法，用于关闭WebSocket连接和清理资源
+                cleanup() {
+                    if (this.socket) {
+                        this.socket.close();
+                    }
+                    
+                    if (this.heartbeatInterval) {
+                        clearInterval(this.heartbeatInterval);
+                    }
+                    
+                    // 清理所有无人机标记
+                    if (this.droneMarkers) {
+                        this.droneMarkers.forEach(marker => {
+                            this.map.remove(marker);
+                        });
+                        this.droneMarkers.clear();
+                    }
+                    
+                    // 清理所有飞行路径
+                    if (this.pathPolylines) {
+                        this.pathPolylines.forEach(polyline => {
+                            this.map.remove(polyline);
+                        });
+                        this.pathPolylines.clear();
+                    }
+                }
+            }
+
+            // 创建地图实例
+            droneMap = new DroneMap3D('map-scene');
+            
+            // 添加页面卸载前的清理
+            window.addEventListener('beforeunload', () => {
+                if (droneMap) {
+                    droneMap.cleanup();
+                }
+            });
+        };
+    </script>
+</body>
+</html> 

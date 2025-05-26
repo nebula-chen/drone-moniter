@@ -1,0 +1,15 @@
+services:
+  gozero:
+    build: .
+    container_name: drone-service
+    ports:
+      - "19999:19999"
+    environment:
+      - TZ=Asia/Shanghai   # 可选：设置时区
+    networks:
+      - gozero-network
+    restart: always
+
+networks:
+  gozero-network:
+    driver: bridge

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 机身主体 -->
+    <circle cx="16" cy="16" r="6" fill="#2C3E50"/>
+    
+    <!-- 四个旋翼臂 -->
+    <rect x="8" y="15" width="16" height="2" fill="#34495E"/>
+    <rect x="15" y="8" width="2" height="16" fill="#34495E"/>
+    
+    <!-- 四个电机和螺旋桨 -->
+    <circle cx="7" cy="16" r="3" fill="#E74C3C"/>
+    <circle cx="25" cy="16" r="3" fill="#E74C3C"/>
+    <circle cx="16" cy="7" r="3" fill="#E74C3C"/>
+    <circle cx="16" cy="25" r="3" fill="#E74C3C"/>
+    
+    <!-- 前向指示器 -->
+    <path d="M16 10L18 14H14L16 10Z" fill="#3498DB"/>
+</svg> 
