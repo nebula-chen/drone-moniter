@@ -9,9 +9,10 @@ sudo apt-get install nginx
 配置文件目录：/etc/nginx/
 默认网站根目录：/var/www/html/
 日志文件：/var/log/nginx/
+
+# 将无人机后端的nignx配置复制到 nginx 配置目录下
+sudo cp ./nginx_drone.conf /etc/nginx/sites-enabled/
 ```
-
-
 
 * 安装 docker-compose
 ```Shell
@@ -24,6 +25,20 @@ sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 ```
 
+* 部署
 ```Shell
+# 如果 index.html 有修改则需要同步至 nginx
+# 把 index.html 移动到 nginx 默认网站根目录
+sudo cp ./drone-api/resources/index.html /var/www/html/
 
+# 一键部署并启动服务
+./deploy.sh
+
+# 停止服务
+./stop.sh
+```
+
+* frp 内网穿透
+```
+如需使用公网 ip 转发，请单独配置 frpc 进程
 ```
