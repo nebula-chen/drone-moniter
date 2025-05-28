@@ -1,6 +1,18 @@
 # drone-moniter
 无人机监控系统后端接口
 
+* 安装 nginx
+```Shell
+# 包管理器安装
+sudo apt-get install nginx
+
+配置文件目录：/etc/nginx/
+默认网站根目录：/var/www/html/
+日志文件：/var/log/nginx/
+```
+
+
+
 * 安装 docker-compose
 ```Shell
 # 下载最新稳定版 Docker Compose
