@@ -12,5 +12,7 @@ type DroneStatusReq struct {
 	Altitude   float64 `json:"altitude"`
 	Height     float64 `json:"height"`
 	Course     float64 `json:"course"`
+	Payload    int     `json:"payload"`
+	Battery    int     `json:"battery"`
 }
 ```
