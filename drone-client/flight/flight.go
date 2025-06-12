@@ -6,11 +6,11 @@ import "math"
 const EarthRadius = 6371000
 
 // 计算新的经纬度
-func GetNewLatLon(lat, lon, speed, bearing float64, interval int) (float64, float64) {
+func GetNewLatLon(lat, lon, speed float64, bearing, interval int) (float64, float64) {
 	// 角度转换为弧度
 	latRad := degToRad(lat)
 	lonRad := degToRad(lon)
-	bearingRad := degToRad(bearing)
+	bearingRad := degToRad(float64(bearing))
 
 	// 计算移动的距离（单位：米）
 	distance := speed * float64(interval)

@@ -397,7 +397,7 @@
                     <input type="date" id="filter-end-date">
                 </label>
                 <label>设备ID:
-                    <input type="text" id="filter-uavid" placeholder="UavId">
+                    <input type="text" id="filter-uasid" placeholder="UasId">
                 </label>
                 <button class="control-btn" id="filter-records-btn" style="min-width:60px;">筛选</button>
             </div>
@@ -697,14 +697,14 @@
                     console.log('收到无人机数据:', data);
                     
                     // 检查数据是否有效
-                    if (!data || typeof data !== 'object' || !data.uavId) {
+                    if (!data || typeof data !== 'object' || !data.uasId) {
                         console.error('接收到无效的无人机数据');
                         return;
                     }
                     
                     // 注意：后端的经纬度是整数，需要转换为浮点数并除以适当的因子
                     const droneData = {
-                        id: data.uavId,                     // 无人机ID作为唯一标识
+                        id: data.uasId,                     // 无人机ID作为唯一标识
                         longitude: data.longitude / 10000000, // 将整数转换为度数
                         latitude: data.latitude / 10000000,   // 将经度转换为度数
                         altitude: data.altitude,             // 海拔高度
@@ -752,8 +752,8 @@
                     }
                     
                     // 计算总飞行距离
-                    if (this.droneCollection.has(data.uavId)) {
-                        const oldData = this.droneCollection.get(data.uavId);
+                    if (this.droneCollection.has(data.uasId)) {
+                        const oldData = this.droneCollection.get(data.uasId);
                         
                         // 使用Haversine公式计算球面距离
                         const R = 6371000; // 地球半径，单位米
@@ -782,13 +782,13 @@
                     }
                     
                     // 将无人机数据存入集合
-                    this.droneCollection.set(data.uavId, droneData);
+                    this.droneCollection.set(data.uasId, droneData);
                     
                     // this.updateOrCreateDroneMarker(droneData);   // 更新2D无人机标记
                     this.updateOrCreateDroneMarker3D(droneData);    // 更新3D无人机标记
                     
                     // 如果是当前选中的无人机，更新信息面板
-                    if (this.selectedDroneId === data.uavId) {
+                    if (this.selectedDroneId === data.uasId) {
                         this.updateInfoPanel(droneData);
                     }
                 }
@@ -988,8 +988,8 @@
                 
                 // 计算无人机速度
                 calculateSpeed(data) {
-                    if (this.droneCollection.has(data.uavId)) {
-                        const oldData = this.droneCollection.get(data.uavId);
+                    if (this.droneCollection.has(data.uasId)) {
+                        const oldData = this.droneCollection.get(data.uasId);
                         
                         // 简单距离计算 - 修正坐标换算
                         // 经纬度值已经在processDroneData中被除以10000000，这里使用原始值计算
@@ -1163,10 +1163,10 @@
             // 获取筛选条件
             const start = document.getElementById('filter-start-date').value;
             const end = document.getElementById('filter-end-date').value;
-            const uavId = document.getElementById('filter-uavid').value.trim();
+            const uasId = document.getElementById('filter-uasid').value.trim();
 
             // 记录筛选条件
-            lastFilter = { start, end, uavId };
+            lastFilter = { start, end, uasId };
 
             // 构造查询参数
             const params = new URLSearchParams();
@@ -1174,7 +1174,7 @@
             params.append('pageSize', recordsPageSize);
             if (start) params.append('start', start);
             if (end) params.append('end', end);
-            if (uavId) params.append('uavId', uavId);
+            if (uasId) params.append('uasId', uasId);
 
             fetch(`/api/flight/records?${params.toString()}`)
                 .then(r => {
@@ -1209,7 +1209,7 @@
                 tbody.innerHTML += `<tr>
                     <td>${formatTime(rec.startTime)}</td>
                     <td>${formatTime(rec.endTime)}</td>
-                    <td>${rec.uavId}</td>
+                    <td>${rec.uasId}</td>
                     <td>${rec.distance != null ? rec.distance : '-'}</td>
                     <td>${rec.batteryUsed != null ? rec.batteryUsed : '-'}</td>
                 </tr>`;

@@ -4,22 +4,38 @@
 package types
 
 type DroneStatusReq struct {
-	RecordId   string  `json:"recordId"`
-	UavType    string  `json:"uavType"`
-	UavId      string  `json:"uavId"`
-	TimeStamp  string  `json:"timeStamp"`
-	FlightTime int     `json:"flightTime"`
-	Longitude  int     `json:"longitude"`
-	Latitude   int     `json:"latitude"`
-	Altitude   float64 `json:"altitude"`
-	Height     float64 `json:"height"`
-	Course     float64 `json:"course"`
-	Payload    int     `json:"payload"`
-	Battery    int     `json:"battery"`
+	OrderID        string `json:"orderId"`
+	FlightCode     string `json:"flightCode"`
+	SN             string `json:"sn"`
+	FlightStatus   string `json:"flightStatus"`
+	ManufacturerID string `json:"manufacturerId"`
+	UasId          string `json:"uasId"`
+	TimeStamp      string `json:"timeStamp"`
+	UasModel       string `json:"uasModel"`
+	Coordinate     int    `json:"coordinate"`
+	Longitude      int64  `json:"longitude"`
+	Latitude       int64  `json:"latitude"`
+	HeightType     int    `json:"heightType"`
+	Height         int    `json:"height"`
+	Altitude       int    `json:"altitude"`
+	VS             int    `json:"vs"`
+	GS             int    `json:"gs"`
+	Course         int    `json:"course"`
+	SOC            int    `json:"soc"`
+	RM             int    `json:"rm"`
+	WindSpeed      int    `json:"windSpeed"`
+	WindDirect     int    `json:"windDirect"`
+	Temperture     int    `json:"temperture"`
+	Humidity       int    `json:"humidity"`
+	RecordId       string `json:"recordId"`
+	UavType        string `json:"uavType"`
+	FlightTime     int    `json:"flightTime"`
+	Payload        int    `json:"payload"`
 }
 
 type DroneStatusResp struct {
-	Code int `json:"code"`
+	Code     string `json:"code"`
+	ErrorMsg bool   `json:"errorMsg"`
 }
 
 type FlightRecordListResp struct {
@@ -30,14 +46,14 @@ type FlightRecordListResp struct {
 }
 
 type FlightRecordReq struct {
-	UavId       string `json:"uavId"`
+	UasId       string `json:"uasId"`
 	StartTime   string `json:"startTime"` // ISO8601格式
 	EndTime     string `json:"endTime"`   // ISO8601格式
-	StartLat    int    `json:"startLat"`
-	StartLng    int    `json:"startLng"`
-	EndLat      int    `json:"endLat"`
-	EndLng      int    `json:"endLng"`
-	Distance    int    `json:"distance"`
+	StartLat    int64  `json:"startLat"`
+	StartLng    int64  `json:"startLng"`
+	EndLat      int64  `json:"endLat"`
+	EndLng      int64  `json:"endLng"`
+	Distance    int64  `json:"distance"`
 	BatteryUsed int    `json:"batteryUsed"`
 }
 

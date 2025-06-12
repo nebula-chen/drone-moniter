@@ -33,12 +33,12 @@ const (
 type flightState struct {
 	Phase        FlightPhase
 	StartTime    time.Time
-	StartLat     int
-	StartLng     int
+	StartLat     int64
+	StartLng     int64
 	StartBattery int
-	LastLat      int
-	LastLng      int
-	LastHeight   float64
+	LastLat      int64
+	LastLng      int64
+	LastHeight   int
 	LastBattery  int
 	LastTime     time.Time
 }
@@ -56,7 +56,7 @@ func NewHandleDroneStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func calcDistance(lat1, lng1, lat2, lng2 int) int {
+func calcDistance(lat1, lng1, lat2, lng2 int64) int64 {
 	// 使用haversine公式
 	const R = 6371000 // 地球半径，单位为米
 	lat1Rad := float64(lat1) * (math.Pi / 180.0)
@@ -66,7 +66,7 @@ func calcDistance(lat1, lng1, lat2, lng2 int) int {
 	a := (math.Sin(deltaLat/2) * math.Sin(deltaLat/2)) +
 		(math.Cos(lat1Rad) * math.Cos(lat2Rad) * math.Sin(deltaLng/2) * math.Sin(deltaLng/2))
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return int(R * c) // 返回距离，单位为米
+	return int64(R * c) // 返回距离，单位为米
 }
 
 func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (resp *types.DroneStatusResp, err error) {
@@ -93,12 +93,12 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 	// 3. 自动整理飞行记录
 	flightStateMu.Lock()
 	defer flightStateMu.Unlock()
-	state, ok := flightStateMap[req.UavId]
+	state, ok := flightStateMap[req.UasId]
 	if !ok {
 		state = &flightState{
 			Phase: Idle,
 		}
-		flightStateMap[req.UavId] = state
+		flightStateMap[req.UasId] = state
 	}
 
 	// 状态机切换逻辑
@@ -109,7 +109,7 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 			state.StartTime = t
 			state.StartLat = req.Latitude
 			state.StartLng = req.Longitude
-			state.StartBattery = req.Battery
+			state.StartBattery = req.SOC
 		}
 	case Takeoff:
 		if req.Height > 5 {
@@ -131,12 +131,12 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 			endTime := t
 			endLat := req.Latitude
 			endLng := req.Longitude
-			batteryUsed := state.StartBattery - req.Battery
+			batteryUsed := state.StartBattery - req.SOC
 			distance := calcDistance(state.StartLat, state.StartLng, endLat, endLng)
 			record := &types.FlightRecordReq{
 				StartTime:   state.StartTime.Format(time.RFC3339),
 				EndTime:     endTime.Format(time.RFC3339),
-				UavId:       req.UavId,
+				UasId:       req.UasId,
 				Distance:    distance,
 				BatteryUsed: batteryUsed,
 				StartLat:    state.StartLat,
@@ -156,10 +156,10 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 	state.LastLng = req.Longitude
 	state.LastHeight = req.Height
 	state.LastTime = t
-	state.LastBattery = req.Battery
+	state.LastBattery = req.SOC
 
 	resp = &types.DroneStatusResp{
-		Code: 200,
+		Code: "200",
 	}
 	return resp, nil
 }

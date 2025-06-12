@@ -55,7 +55,7 @@ func (d *InfluxDao) BuildPoint(droneStatus *types.DroneStatusReq) (*write.Point,
 		map[string]string{ // Tags, 相当于建立索引
 			"recordId": droneStatus.RecordId,
 			"uavType":  droneStatus.UavType,
-			"uavId":    droneStatus.UavId},
+			"uavId":    droneStatus.UasId},
 		map[string]interface{}{ // Fields, 相当于表的字段
 			"flightTime": droneStatus.FlightTime,
 			"longitude":  droneStatus.Longitude,
@@ -88,7 +88,7 @@ func (d *InfluxDao) AddFlightRecord(record *types.FlightRecordReq) error {
 
 	point := write.NewPoint("flight_record",
 		map[string]string{
-			"uavId": record.UavId,
+			"uavId": record.UasId,
 		},
 		map[string]interface{}{
 			"startLat":    record.StartLat,
