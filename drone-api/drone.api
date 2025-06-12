@@ -1,3 +1,4 @@
+// goctl api go -api drone.api -dir .
 type DroneStatusReq {
 	RecordId   string  `json:"recordId"`
 	UavType    string  `json:"uavType"`
@@ -9,10 +10,51 @@ type DroneStatusReq {
 	Altitude   float64 `json:"altitude"`
 	Height     float64 `json:"height"`
 	Course     float64 `json:"course"`
+	Payload    int     `json:"payload"`
+	Battery    int     `json:"battery"`
 }
 
 type DroneStatusResp {
 	Code int `json:"code"`
+}
+
+// 新增：飞行数据记录请求体
+type FlightRecordReq {
+	UavId       string `json:"uavId"`
+	StartTime   string `json:"startTime"` // ISO8601格式
+	EndTime     string `json:"endTime"` // ISO8601格式
+	StartLat    int    `json:"startLat"`
+	StartLng    int    `json:"startLng"`
+	EndLat      int    `json:"endLat"`
+	EndLng      int    `json:"endLng"`
+	Distance    int    `json:"distance"`
+	BatteryUsed int    `json:"batteryUsed"`
+}
+
+// 新增：飞行数据记录响应体
+type FlightRecordResp {
+	Code int `json:"code"`
+}
+
+// 新增：飞行统计响应体
+type FlightStatsResp {
+	TotalFlights  int     `json:"totalFlights"`
+	TotalDistance float64 `json:"totalDistance"`
+}
+
+type RecordItem {
+	StartTime   int64   `json:"startTime"`
+	EndTime     int64   `json:"endTime"`
+	UavId       string  `json:"uavId"`
+	Distance    float64 `json:"distance"`
+	BatteryUsed int     `json:"batteryUsed"`
+}
+
+type FlightRecordListResp {
+	Total        int          `json:"total"`
+	Records      []RecordItem `json:"records"`
+	TotalUav     int          `json:"totalUav"`
+	TotalFlights int          `json:"totalFlights"`
 }
 
 service drone-api {
@@ -21,5 +63,13 @@ service drone-api {
 
 	@handler HandleWebSocket
 	get /api/ws
+
+	// 新增：飞行统计接口
+	@handler HandleFlightStats
+	get /api/flight/stats returns (FlightStatsResp)
+
+	// 新增：飞行记录分页查询接口
+	@handler HandleFlightRecords
+	get /api/flight/records returns (FlightRecordListResp)
 }
 
