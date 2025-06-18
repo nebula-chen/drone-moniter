@@ -1,0 +1,17 @@
+services:
+  drone-stats-service:
+    build: .
+    container_name: drone-stats-service
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./log:/app/log  # 数据持久化目录
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - my-network
+    restart: always
+
+networks:
+  my-network:
+    external: true

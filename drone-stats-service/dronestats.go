@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"time"
@@ -24,10 +25,15 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 
+	ctx := svc.NewServiceContext(c)
+	// 自动建表
+	if err := autoMigrate(ctx.MySQLDao.DB); err != nil {
+		panic(err)
+	}
+
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
-	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
 
 	// 启动定时任务
@@ -70,4 +76,53 @@ func processAllUasData(ctx *svc.ServiceContext) {
 			fmt.Println("处理无人机飞行数据失败:", id, err)
 		}
 	}
+}
+
+func autoMigrate(db *sql.DB) error {
+	// uas_devices 表
+	_, err := db.Exec(`
+    CREATE TABLE IF NOT EXISTS uas_devices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        uas_id VARCHAR(64) NOT NULL UNIQUE,
+        register_time DATETIME,
+        last_online_time DATETIME,
+        status TINYINT,
+        model VARCHAR(64)
+    );`)
+	if err != nil {
+		return err
+	}
+
+	// flight_records 表
+	_, err = db.Exec(`
+    CREATE TABLE IF NOT EXISTS flight_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        uav_id VARCHAR(64) NOT NULL,
+        start_time DATETIME NOT NULL,
+        end_time DATETIME,
+        start_lat BIGINT,
+        start_lng BIGINT,
+        end_lat BIGINT,
+        end_lng BIGINT,
+        distance DOUBLE(10,2),
+        battery_used INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`)
+	if err != nil {
+		return err
+	}
+
+	// flight_track_points 表
+	_, err = db.Exec(`
+    CREATE TABLE IF NOT EXISTS flight_track_points (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        flight_record_id INT NOT NULL,
+        flight_status VARCHAR(16),
+        time_stamp DATETIME,
+        longitude BIGINT,
+        latitude BIGINT,
+        altitude DOUBLE(6,1),
+        soc INT
+    );`)
+	return err
 }

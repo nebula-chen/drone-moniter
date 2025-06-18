@@ -26,4 +26,13 @@ if ! docker-compose up --build -d; then
 fi
 echo "离开目录 ${path}"
 
+cd ../drone-stats-service
+path=$(pwd -P)
+echo "进入目录 ${path}"
+if ! docker-compose up --build -d; then
+  echo "错误: docker-compose 启动 drone-stats-service 失败!" >&2
+  exit 1
+fi
+echo "离开目录 ${path}"
+
 echo "Done!!!"
