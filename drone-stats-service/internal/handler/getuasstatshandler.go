@@ -3,15 +3,15 @@ package handler
 import (
 	"net/http"
 
-	"drone-api/internal/logic"
-	"drone-api/internal/svc"
+	"drone-stats-service/internal/logic"
+	"drone-stats-service/internal/svc"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func HandleFlightStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetUasStatsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := logic.NewHandleFlightStatsLogic(r.Context(), svcCtx)
-		resp, err := l.HandleFlightStats()
+		l := logic.NewGetUasStatsLogic(r.Context(), svcCtx)
+		resp, err := l.GetUasStats()
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

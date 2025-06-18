@@ -4,12 +4,12 @@
 package types
 
 type DroneStatusReq struct {
-	OrderID        string `json:"orderId"`
+	OrderID        string `json:"orderID"`
 	FlightCode     string `json:"flightCode"`
-	SN             string `json:"sn"`
+	Sn             string `json:"sn"`
 	FlightStatus   string `json:"flightStatus"`
-	ManufacturerID string `json:"manufacturerId"`
-	UasId          string `json:"uasId"`
+	ManufacturerID string `json:"manufacturerID"`
+	UasID          string `json:"uasID"`
 	TimeStamp      string `json:"timeStamp"`
 	UasModel       string `json:"uasModel"`
 	Coordinate     int    `json:"coordinate"`
@@ -18,19 +18,15 @@ type DroneStatusReq struct {
 	HeightType     int    `json:"heightType"`
 	Height         int    `json:"height"`
 	Altitude       int    `json:"altitude"`
-	VS             int    `json:"vs"`
-	GS             int    `json:"gs"`
+	VS             int    `json:"VS"`
+	GS             int    `json:"GS"`
 	Course         int    `json:"course"`
-	SOC            int    `json:"soc"`
-	RM             int    `json:"rm"`
-	WindSpeed      int    `json:"windSpeed"`
-	WindDirect     int    `json:"windDirect"`
-	Temperture     int    `json:"temperture"`
-	Humidity       int    `json:"humidity"`
-	RecordId       string `json:"recordId"`
-	UavType        string `json:"uavType"`
-	FlightTime     int    `json:"flightTime"`
-	Payload        int    `json:"payload"`
+	SOC            int    `json:"SOC"`
+	RM             int    `json:"RM"`
+	WindSpeed      int    `json:"windSpeed,optional"`
+	WindDirect     int    `json:"windDirect,optional"`
+	Temperture     int    `json:"temperture,optional"`
+	Humidity       int    `json:"humidity,optional"`
 }
 
 type DroneStatusResp struct {

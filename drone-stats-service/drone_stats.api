@@ -1,0 +1,34 @@
+// goctl api go -api drone_stats.api -dir .
+type FlightRecordReq {
+	FlightCode string `json:"flightCode"`
+	startTime  string `json:"startTime"`
+	endTime    string `json:"endTime"`
+}
+
+type FlightRecord {
+	FlightCode   string `json:"flightCode"`
+	FlightStatus string `json:"flightStatus"`
+	TimeStamp    string `json:"timeStamp"`
+	Longitude    int64  `json:"longitude"`
+	Latitude     int64  `json:"latitude"`
+	Altitude     int    `json:"altitude"`
+	SOC          int    `json:"SOC"`
+}
+
+type FlightRecordResponse {
+	records []FlightRecord
+}
+
+type UasStatsResp {
+	total  int `json:"total"`
+	online int `json:"online"`
+}
+
+service droneStats {
+	@handler GetFlightRecords
+	post /api/flight/records (FlightRecordReq) returns (FlightRecordResponse)
+
+	@handler GetUasStats
+	get /api/uas/stats returns (UasStatsResp)
+}
+

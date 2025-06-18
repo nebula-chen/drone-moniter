@@ -6,7 +6,7 @@ package handler
 import (
 	"net/http"
 
-	"drone-api/internal/svc"
+	"drone-stats-service/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -16,13 +16,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
-				Path:    "/api/drone/status",
-				Handler: HandleDroneStatusHandler(serverCtx),
+				Path:    "/api/flight/records",
+				Handler: GetFlightRecordsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/ws",
-				Handler: HandleWebSocketHandler(serverCtx),
+				Path:    "/api/uas/stats",
+				Handler: GetUasStatsHandler(serverCtx),
 			},
 		},
 	)
