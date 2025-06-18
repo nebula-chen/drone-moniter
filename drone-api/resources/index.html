@@ -321,33 +321,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #a0a0a0;
         }
-
-        /* 新增起飞记录面板样式 */
-        .flight-records-panel {
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90vw;
-            max-width: 1100px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.13);
-            padding: 18px 20px 10px 20px;
-            z-index: 100;
-        }
-        .flight-records-panel table th, .flight-records-panel table td {
-            border: 1px solid #eaeaea;
-            font-size: 13px;
-        }
-        .flight-records-panel table th {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        .flight-records-panel table td {
-            color: #34495e;
-            padding: 4px 6px;
-        }
     </style>
 </head>
 <body>
@@ -367,6 +340,7 @@
                     <p>经度: <span id="longitude">0</span>°</p>
                     <p>纬度: <span id="latitude">0</span>°</p>
                     <p>无人机ID: <span id="uav-id">-</span></p>
+                    <p>电池电量: <span id="soc">-</span></p>
                 </div>
             </div>
             <div class="control-panel">
@@ -388,40 +362,16 @@
                 </div>
             </div>
         </div>
-        <button class="control-btn" id="show-flight-records-btn" style="margin: 18px 0 0 20px; width: 120px;">起飞记录</button>
-        <div class="flight-records-panel" id="flight-records-panel" style="display:none;">
-            <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 10px;">
-                <label>时间范围:
-                    <input type="date" id="filter-start-date">
-                    -
-                    <input type="date" id="filter-end-date">
-                </label>
-                <label>设备ID:
-                    <input type="text" id="filter-uasid" placeholder="UasId">
-                </label>
-                <button class="control-btn" id="filter-records-btn" style="min-width:60px;">筛选</button>
-            </div>
-            <table style="width:100%;border-collapse:collapse;">
-                <thead>
-                    <tr style="background:#f8f9fa;">
-                        <th style="padding:4px 6px;">起飞时间</th>
-                        <th style="padding:4px 6px;">降落时间</th>
-                        <th style="padding:4px 6px;">设备ID</th>
-                        <th style="padding:4px 6px;">飞行距离(m)</th>
-                        <th style="padding:4px 6px;">电量消耗</th>
-                    </tr>
-                </thead>
-                <tbody id="flight-records-tbody"></tbody>
-            </table>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;">
-                <div>
-                    <button class="control-btn" id="prev-page-btn" style="min-width:60px;">上一页</button>
-                    <span id="page-info" style="margin:0 8px;">第 1/1 页</span>
-                    <button class="control-btn" id="next-page-btn" style="min-width:60px;">下一页</button>
+        <div class="stats-container">
+            <div class="stats-title">飞行统计数据</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">无人机数量</div>
+                    <div class="stat-value" id="drone-count">0</div>
                 </div>
-                <div>
-                    总设备数：<span id="total-uav-count">0</span>
-                    &nbsp;&nbsp;总起飞数：<span id="total-flight-count">0</span>
+                <div class="stat-card">
+                    <div class="stat-title">飞行次数</div>
+                    <div class="stat-value" id="flight-count">0</div>
                 </div>
             </div>
         </div>
@@ -481,7 +431,7 @@
                     this.droneCollection = new Map();
                     
                     // 存储已收到的recordId集合，用于统计飞行次数
-                    this.recordIdSet = new Set();
+                    this.flightCodeSet = new Set();
                     
                     // 存储飞行路线数据，按recordId分组
                     this.flightPaths = new Map();
@@ -650,12 +600,38 @@
                     };
                 }
                 
+                // 添加点击事件逻辑
+                on3DClick(event) {
+                    // 根据渲染canvas的坐标计算鼠标的标准化设备坐标
+                    const rect = this.fp_renderer.domElement.getBoundingClientRect();
+                    const mouse = new THREE.Vector2();
+                    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.setFromCamera(mouse, this.fp_camera);
+                    // 获取所有3D无人机标记
+                    const markers = this.droneMarkerGroup ? this.droneMarkerGroup.children : [];
+                    const intersects = raycaster.intersectObjects(markers);
+                    if (intersects.length > 0) {
+                        // 找到最近的被点击对象
+                        const sprite = intersects[0].object;
+                        const droneId = sprite.userData.droneId;
+                        this.selectedDroneId = droneId;
+                        if (this.droneCollection.has(droneId)) {
+                            const droneData = this.droneCollection.get(droneId);
+                            this.updateInfoPanel(droneData);
+                        }
+                        return true; // 命中无人机标记
+                    }
+                    return false; // 未命中
+                }
+                
                 // 新增：初始化3D飞行轨迹图层
                 initFlightPath3DLayer() {
                     const self = this;
                     // 创建一个用于存放3D轨迹线的组
                     this.flightPathGroup = new THREE.Group();
-                    
                     // 创建GLCustomLayer
                     this.flightPathLayer = new AMap.GLCustomLayer({
                         zIndex: 5,
@@ -671,6 +647,16 @@
                             self.droneMarkerGroup = new THREE.Group();  // 创建无人机标记组
                             self.fp_scene.add(self.droneMarkerGroup);   // 添加无人机标记组到场景中
                             self.fp_camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1 << 28);
+
+                            // 修改：只在命中无人机标记时阻止事件冒泡
+                            self.fp_renderer.domElement.addEventListener('pointerdown', (event) => {
+                                const hit = this.on3DClick(event);
+                                if (hit) {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                }
+                                // 没命中时不阻止，事件会传递到高德地图
+                            });
                         },
                         render: () => {
                             self.fp_renderer.resetState();
@@ -697,45 +683,46 @@
                     console.log('收到无人机数据:', data);
                     
                     // 检查数据是否有效
-                    if (!data || typeof data !== 'object' || !data.uasId) {
+                    if (!data || typeof data !== 'object') {
                         console.error('接收到无效的无人机数据');
                         return;
                     }
                     
                     // 注意：后端的经纬度是整数，需要转换为浮点数并除以适当的因子
                     const droneData = {
-                        id: data.uasId,                     // 无人机ID作为唯一标识
-                        longitude: data.longitude / 10000000, // 将整数转换为度数
-                        latitude: data.latitude / 10000000,   // 将经度转换为度数
-                        altitude: data.altitude,             // 海拔高度
-                        height: data.height,                 // 对地高度
+                        id: data.flightCode,
+                        recordId: data.flightCode,                  // 无人机ID作为唯一标识
+                        longitude: data.longitude / 10000000.0, // 将整数转换为度数
+                        latitude: data.latitude / 10000000.0,   // 将经度转换为度数
+                        altitude: data.altitude / 10,         // 海拔高度
+                        height: data.height / 10,             // 对地高度
                         heading: data.course,                // 无人机朝向角度
-                        speed: this.calculateSpeed(data),    // 计算速度
-                        flightTime: data.flightTime,         // 飞行时间
+                        speed: data.VS,                      // 计算速度
                         uavType: data.uavType,               // 无人机类型
-                        recordId: data.recordId,             // 记录ID
+                        orderID: data.orderID,               // 记录ID
                         timeStamp: data.timeStamp,           // 时间戳
-                        totalDistance: 0,                    // 初始化累计飞行距离
-                        battery: data.battery,               // 电池电量
-                        payload: data.payload,               // 无人机挂载量
+                        SOC: data.SOC                        // 初始化模拟电池电量
                     };
                     
-                    // 检查是否是新的recordId
-                    if (data.recordId && !this.recordIdSet.has(data.recordId)) {
+                    // 检查是否是新的flightCode
+                    if (data.flightCode && !this.flightCodeSet.has(data.flightCode)) {
                         // 清除之前所有的飞行路径，只保留当前正在执行的
                         this.clearAllPaths();
                         
-                        // 添加新的recordId到集合
-                        this.recordIdSet.add(data.recordId);
+                        // 添加新的flightCode到集合
+                        this.flightCodeSet.add(data.flightCode);
                         
                         // 初始化新的飞行路径数组
-                        this.flightPaths.set(data.recordId, []);
+                        this.flightPaths.set(data.flightCode, []);
+                        
+                        // 更新统计数据
+                        this.updateStatsPanel();
                     }
                     
                     // 添加当前位置到飞行路径
-                    if (data.recordId) {
-                        const path = this.flightPaths.get(data.recordId) || [];
-                        const newPoint = [droneData.longitude, droneData.latitude, droneData.height];
+                    if (data.flightCode) {
+                        const path = this.flightPaths.get(data.flightCode) || [];
+                        const newPoint = [droneData.longitude, droneData.latitude, droneData.altitude];
                         
                         // 检查是否有效点位，避免添加重复点或异常点
                         const lastPoint = path.length > 0 ? path[path.length - 1] : null;
@@ -744,53 +731,26 @@
                             lastPoint[1] !== newPoint[1] ||
                             lastPoint[2] !== newPoint[2])) {
                             path.push(newPoint);
-                            this.flightPaths.set(data.recordId, path);
+                            this.flightPaths.set(data.flightCode, path);
                             
-                            // this.updateFlightPath(data.recordId, path);   // 更新2D路径
-                            this.updateFlightPath3D(data.recordId, path);   // 更新3D路径
+                            // this.updateFlightPath(data.flightCode, path);   // 更新2D路径
+                            this.updateFlightPath3D(data.flightCode, path);   // 更新3D路径
                         }
-                    }
-                    
-                    // 计算总飞行距离
-                    if (this.droneCollection.has(data.uasId)) {
-                        const oldData = this.droneCollection.get(data.uasId);
-                        
-                        // 使用Haversine公式计算球面距离
-                        const R = 6371000; // 地球半径，单位米
-                        const oldLat = oldData.latitude;
-                        const oldLon = oldData.longitude;
-                        const newLat = droneData.latitude;
-                        const newLon = droneData.longitude;
-                        
-                        const dLat = (newLat - oldLat) * Math.PI / 180;
-                        const dLon = (newLon - oldLon) * Math.PI / 180;
-                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                                Math.cos(oldLat * Math.PI / 180) * Math.cos(newLat * Math.PI / 180) * 
-                                Math.sin(dLon/2) * Math.sin(dLon/2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                        const distance = R * c; // 单位：米
-                        
-                        // 如果距离合理则累加，否则保持原值
-                        if (distance >= 0 && distance < 100) { // 避免异常数据，限制单次移动距离
-                            droneData.totalDistance = oldData.totalDistance + distance;
-                        } else {
-                            droneData.totalDistance = oldData.totalDistance;
-                        }
-                        
-                        // 更新电池电量
-                        droneData.battery = data.battery
                     }
                     
                     // 将无人机数据存入集合
-                    this.droneCollection.set(data.uasId, droneData);
+                    this.droneCollection.set(droneData.id, droneData);
                     
                     // this.updateOrCreateDroneMarker(droneData);   // 更新2D无人机标记
                     this.updateOrCreateDroneMarker3D(droneData);    // 更新3D无人机标记
                     
                     // 如果是当前选中的无人机，更新信息面板
-                    if (this.selectedDroneId === data.uasId) {
+                    if (this.selectedDroneId === droneData.id) {
                         this.updateInfoPanel(droneData);
                     }
+                    
+                    // 更新统计数据
+                    this.updateStatsPanel();
                 }
 
                 // 修改-将颜色生成提取为类方法
@@ -838,13 +798,13 @@
                 
                 // 新增：利用THREE更新3D轨迹（与当前recordId对应）
                 updateFlightPath3D(recordId, path) {
-                    // 使用customCoords工具将每个[lng, lat]点转换为3D坐标，并使用height值进行Z轴偏移
+                    // 使用customCoords工具将每个[lng, lat]点转换为3D坐标，并使用altitude值进行Z轴偏移
                     const points = path.map(pt => {
-                        const [lng, lat, height] = pt;
+                        const [lng, lat, altitude] = pt;
                         // customCoords.lngLatsToCoords 接受二维数组
-                        const coord = this.map.customCoords.lngLatsToCoords([[lng, lat]])[0];
+                        const coord = this.customCoords.lngLatsToCoords([[lng, lat]])[0];
                         // 将转换后的坐标第三个元素赋予高度（若需要，可以添加放大因子）
-                        coord[2] = height - 10;
+                        coord[2] = altitude;
                         return new THREE.Vector3(coord[0], coord[1], coord[2]);
                     });
                     const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -951,12 +911,12 @@
                         this.droneMarkers3D = new Map();
                     }
                     
-                    const { id, longitude, latitude, heading, height } = data;
+                    const { id, longitude, latitude, heading, altitude } = data;
                     
                     // 利用customCoords将经纬度转换为3D坐标
                     const coord = this.map.customCoords.lngLatsToCoords([[longitude, latitude]])[0];
                     // 使用数据中的高度，并加上5单位的偏移，使标记稍微悬浮
-                    coord[2] = height;
+                    coord[2] = altitude;
                     
                     if (this.droneMarkers3D.has(id)) {
                         // 更新已有标记
@@ -976,7 +936,8 @@
                         sprite.position.set(coord[0], coord[1], coord[2]);
                         sprite.material.rotation = heading * Math.PI / 180;
                         
-                        // 可在此处添加鼠标交互事件，但需要借助射线检测（本示例中未添加）
+                        // 可在此处添加鼠标交互事件，但需要借助射线检测
+                        sprite.userData.droneId = id;
                         
                         // 将3D标记添加到无人机标记组中
                         if (this.droneMarkerGroup) {
@@ -986,42 +947,10 @@
                     }
                 }
                 
-                // 计算无人机速度
-                calculateSpeed(data) {
-                    if (this.droneCollection.has(data.uasId)) {
-                        const oldData = this.droneCollection.get(data.uasId);
-                        
-                        // 简单距离计算 - 修正坐标换算
-                        // 经纬度值已经在processDroneData中被除以10000000，这里使用原始值计算
-                        const oldLon = oldData.longitude;
-                        const oldLat = oldData.latitude;
-                        const newLon = data.longitude / 10000000;
-                        const newLat = data.latitude / 10000000;
-                        
-                        // 使用Haversine公式计算两点之间的球面距离
-                        const R = 6371000; // 地球半径，单位米
-                        const dLat = (newLat - oldLat) * Math.PI / 180;
-                        const dLon = (newLon - oldLon) * Math.PI / 180;
-                        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                                Math.cos(oldLat * Math.PI / 180) * Math.cos(newLat * Math.PI / 180) * 
-                                Math.sin(dLon/2) * Math.sin(dLon/2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                        const distance = R * c; // 单位：米
-                        
-                        // 计算时间差（秒）
-                        const currentTime = new Date(data.timeStamp); // RFC3339格式
-                        const lastTime = new Date(oldData.timeStamp);
-                        const timeDiff = (currentTime - lastTime) / 1000;
-                        
-                        // 判断时间差和距离是否有效
-                        if (timeDiff > 0 && distance >= 0) {
-                            // 过滤异常值，如果速度超过100m/s，可能是数据异常
-                            const speed = distance / timeDiff;
-                            return speed > 100 ? 0 : speed; // 单位：m/s
-                        }
-                    }
-                    
-                    return 0; // 默认速度
+                updateStatsPanel() {
+                    // 更新统计面板 - 显示无人机数量和飞行次数
+                    document.getElementById('drone-count').textContent = this.droneCollection.size;
+                    document.getElementById('flight-count').textContent = this.flightCodeSet.size;
                 }
                 
                 updateInfoPanel(data) {
@@ -1042,61 +971,56 @@
                     document.getElementById('longitude').textContent = data.longitude.toFixed(6);
                     document.getElementById('latitude').textContent = data.latitude.toFixed(6);
                     document.getElementById('uav-id').textContent = data.id || '-';
+                    document.getElementById('soc').textContent = data.SOC + '%' || '0%';
                     
                     // 显示更多无人机相关信息
                     // 检查是否已经添加了额外信息项
-                    if (!document.getElementById('uav-type-info')) {
-                        // 添加无人机类型
-                        const typeInfo = document.createElement('p');
-                        typeInfo.innerHTML = `无人机类型: <span id="uav-type-info">-</span>`;
-                        droneInfo.appendChild(typeInfo);
+                    // if (!document.getElementById('uav-type-info')) {
+                    //     // 添加无人机类型
+                    //     const typeInfo = document.createElement('p');
+                    //     typeInfo.innerHTML = `无人机类型: <span id="uav-type-info">-</span>`;
+                    //     droneInfo.appendChild(typeInfo);
                         
-                        // 添加飞行时间
-                        const flightTimeInfo = document.createElement('p');
-                        flightTimeInfo.innerHTML = `飞行时间: <span id="flight-time-info">00:00:00</span>`;
-                        droneInfo.appendChild(flightTimeInfo);
+                    //     // 添加飞行时间
+                    //     const flightTimeInfo = document.createElement('p');
+                    //     flightTimeInfo.innerHTML = `飞行时间: <span id="flight-time-info">00:00:00</span>`;
+                    //     droneInfo.appendChild(flightTimeInfo);
                         
-                        // 添加总飞行距离
-                        const distanceInfo = document.createElement('p');
-                        distanceInfo.innerHTML = `飞行距离: <span id="distance-info">0 m</span>`;
-                        droneInfo.appendChild(distanceInfo);
+                    //     // 添加总飞行距离
+                    //     const distanceInfo = document.createElement('p');
+                    //     distanceInfo.innerHTML = `飞行距离: <span id="distance-info">0 m</span>`;
+                    //     droneInfo.appendChild(distanceInfo);
                         
-                        // 添加电池电量
-                        const batteryInfo = document.createElement('p');
-                        batteryInfo.innerHTML = `电池电量: <span id="battery-info">100%</span>`;
-                        droneInfo.appendChild(batteryInfo);
-
-                        // 添加挂载量信息
-                        const payloadInfo = document.createElement('p');
-                        payloadInfo.innerHTML = `挂载量: <span id="payload-info">0</span>`;
-                        droneInfo.appendChild(payloadInfo);
-                    }
+                    //     // 添加电池电量
+                    //     const batteryInfo = document.createElement('p');
+                    //     batteryInfo.innerHTML = `电池电量: <span id="battery-info">100%</span>`;
+                    //     droneInfo.appendChild(batteryInfo);
+                    // }
                     
                     // 更新额外信息
-                    document.getElementById('uav-type-info').textContent = data.uavType || '-';
+                    // document.getElementById('uav-type-info').textContent = data.uavType || '-';
                     
-                    // 格式化飞行时间
-                    const hours = Math.floor(data.flightTime / 3600);
-                    const minutes = Math.floor((data.flightTime % 3600) / 60);
-                    const seconds = data.flightTime % 60;
-                    const formattedTime = 
-                        String(hours).padStart(2, '0') + ':' + 
-                        String(minutes).padStart(2, '0') + ':' + 
-                        String(seconds).padStart(2, '0');
-                    document.getElementById('flight-time-info').textContent = formattedTime;
+                    // // 格式化飞行时间
+                    // const hours = Math.floor(data.flightTime / 3600);
+                    // const minutes = Math.floor((data.flightTime % 3600) / 60);
+                    // const seconds = data.flightTime % 60;
+                    // const formattedTime = 
+                    //     String(hours).padStart(2, '0') + ':' + 
+                    //     String(minutes).padStart(2, '0') + ':' + 
+                    //     String(seconds).padStart(2, '0');
+                    // document.getElementById('flight-time-info').textContent = formattedTime;
                     
-                    // 格式化飞行距离
-                    let distanceText = '';
-                    if (data.totalDistance >= 1000) {
-                        distanceText = (data.totalDistance / 1000).toFixed(2) + ' km';
-                    } else {
-                        distanceText = Math.round(data.totalDistance) + ' m';
-                    }
-                    document.getElementById('distance-info').textContent = distanceText;
+                    // // 格式化飞行距离
+                    // let distanceText = '';
+                    // if (data.totalDistance >= 1000) {
+                    //     distanceText = (data.totalDistance / 1000).toFixed(2) + ' km';
+                    // } else {
+                    //     distanceText = Math.round(data.totalDistance) + ' m';
+                    // }
+                    // document.getElementById('distance-info').textContent = distanceText;
                     
-                    // 更新电池电量
-                    document.getElementById('battery-info').textContent = data.battery + '%';
-                    document.getElementById('payload-info').textContent = data.payload;
+                    // // 更新电池电量
+                    // document.getElementById('battery-info').textContent = data.battery + '%';
                 }
                 
                 // 清理方法，用于关闭WebSocket连接和清理资源
@@ -1137,94 +1061,6 @@
                 }
             });
         };
-
-        // === 起飞记录面板相关 ===
-        const showRecordsBtn = document.getElementById('show-flight-records-btn');
-        const recordsPanel = document.getElementById('flight-records-panel');
-        let recordsPage = 1, recordsPageSize = 20, recordsTotal = 0, recordsTotalPages = 1;
-        let lastFilter = {};
-
-        showRecordsBtn.onclick = () => {
-            recordsPanel.style.display = recordsPanel.style.display === 'none' ? 'block' : 'none';
-            if (recordsPanel.style.display === 'block') {
-                fetchFlightRecords(1);
-            }
-        };
-
-        document.getElementById('filter-records-btn').onclick = () => fetchFlightRecords(1);
-        document.getElementById('prev-page-btn').onclick = () => {
-            if (recordsPage > 1) fetchFlightRecords(recordsPage - 1);
-        };
-        document.getElementById('next-page-btn').onclick = () => {
-            if (recordsPage < recordsTotalPages) fetchFlightRecords(recordsPage + 1);
-        };
-
-        function fetchFlightRecords(page) {
-            // 获取筛选条件
-            const start = document.getElementById('filter-start-date').value;
-            const end = document.getElementById('filter-end-date').value;
-            const uasId = document.getElementById('filter-uasid').value.trim();
-
-            // 记录筛选条件
-            lastFilter = { start, end, uasId };
-
-            // 构造查询参数
-            const params = new URLSearchParams();
-            params.append('page', page);
-            params.append('pageSize', recordsPageSize);
-            if (start) params.append('start', start);
-            if (end) params.append('end', end);
-            if (uasId) params.append('uasId', uasId);
-
-            fetch(`/api/flight/records?${params.toString()}`)
-                .then(r => {
-                    if (!r.ok) {
-                        throw new Error('接口请求失败: ' + r.status);
-                    }
-                    return r.json();
-                })
-                .then(res => {
-                    // res: { total, records:[], totalUav, totalFlights }
-                    renderFlightRecords(res.records || []);
-                    recordsPage = page;
-                    recordsTotal = res.total || 0;
-                    recordsTotalPages = Math.max(1, Math.ceil(recordsTotal / recordsPageSize));
-                    document.getElementById('page-info').textContent = `第 ${recordsPage}/${recordsTotalPages} 页`;
-                    document.getElementById('total-uav-count').textContent = res.totalUav || 0;
-                    document.getElementById('total-flight-count').textContent = res.totalFlights || 0;
-                })
-                .catch(err => {
-                    alert('获取起飞记录失败: ' + err.message);
-                });
-        }
-
-        function renderFlightRecords(records) {
-            const tbody = document.getElementById('flight-records-tbody');
-            tbody.innerHTML = '';
-            if (!records.length) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#aaa;">暂无数据</td></tr>`;
-                return;
-            }
-            for (const rec of records) {
-                tbody.innerHTML += `<tr>
-                    <td>${formatTime(rec.startTime)}</td>
-                    <td>${formatTime(rec.endTime)}</td>
-                    <td>${rec.uasId}</td>
-                    <td>${rec.distance != null ? rec.distance : '-'}</td>
-                    <td>${rec.batteryUsed != null ? rec.batteryUsed : '-'}</td>
-                </tr>`;
-            }
-        }
-
-        function formatTime(ts) {
-            if (!ts) return '-';
-            const d = new Date(ts * 1000);
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                String(d.getDate()).padStart(2, '0') + ' ' +
-                String(d.getHours()).padStart(2, '0') + ':' +
-                String(d.getMinutes()).padStart(2, '0') + ':' +
-                String(d.getSeconds()).padStart(2, '0');
-        }
     </script>
 </body>
 </html>
