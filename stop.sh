@@ -5,6 +5,13 @@ echo "进入目录 ${path}"
 docker-compose down
 echo "离开目录 ${path}"
 
+# 停止 drone-stats-service 服务
+cd ../drone-stats-service
+path=$(pwd -P)
+echo "进入目录 ${path}"
+docker-compose down
+echo "离开目录 ${path}"
+
 # 停止 influxDB 服务
 cd ../influxDB
 path=$(pwd -P)
