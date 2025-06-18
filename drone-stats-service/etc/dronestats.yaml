@@ -17,4 +17,4 @@ InfluxDBConfig:
   FlushInterval: 5
 
 MySQL:
-  DataSource: "admin:12345678@tcp(localhost:3306)/drone?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai"
+  DataSource: "admin:12345678@tcp(mysql:3306)/drone?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai"
