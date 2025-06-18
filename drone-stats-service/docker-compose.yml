@@ -1,7 +1,24 @@
 services:
-  drone-stats-service:
+  mysql:
+    image: mysql:8.0
+    container_name: drone-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: drone
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: 12345678
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    networks:
+      - my-network
+
+  drone-stats:
     build: .
-    container_name: drone-stats-service
+    container_name: drone-stats
     ports:
       - "8088:8088"
     volumes:

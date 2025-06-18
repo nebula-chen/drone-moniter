@@ -27,7 +27,10 @@ RUN mkdir -p /app/log && chmod -R 777 /app/log
 COPY --from=builder /app/app .
 COPY --from=builder /app/etc ./etc
 
-# 设置时区可选（适配中国时区）
+# 设置国内 apk 源
+RUN echo "https://mirrors.aliyun.com/alpine/v3.22/main" > /etc/apk/repositories && \
+    echo "https://mirrors.aliyun.com/alpine/v3.22/community" >> /etc/apk/repositories
+
 RUN apk add --no-cache tzdata \
     && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
