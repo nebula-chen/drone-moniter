@@ -5,7 +5,7 @@ type FlightRecordReq {
 	endTime    string `json:"endTime"`
 }
 
-type FlightRecord {
+type DroneStats {
 	FlightCode   string `json:"flightCode"`
 	FlightStatus string `json:"flightStatus"`
 	TimeStamp    string `json:"timeStamp"`
@@ -15,8 +15,26 @@ type FlightRecord {
 	SOC          int    `json:"SOC"`
 }
 
-type FlightRecordResponse {
-	records []FlightRecord
+type DroneStatsResponse {
+	records []DroneStats
+}
+
+type FlightRecord {
+	ID          int     `json:"id"`
+	UavId       string  `json:"uav_id"`
+	StartTime   string  `json:"start_time"`
+	EndTime     string  `json:"end_time"`
+	StartLat    int64   `json:"start_lat"`
+	StartLng    int64   `json:"start_lng"`
+	EndLat      int64   `json:"end_lat"`
+	EndLng      int64   `json:"end_lng"`
+	Distance    float64 `json:"distance"`
+	BatteryUsed int     `json:"battery_used"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+type FlightRecordsResponse {
+	flightrecords []FlightRecord `json:"flightRecords"`
 }
 
 type UasStatsResp {
@@ -26,9 +44,15 @@ type UasStatsResp {
 
 service droneStats {
 	@handler GetFlightRecords
-	post /api/flight/records (FlightRecordReq) returns (FlightRecordResponse)
+	post /api/flight/records (FlightRecordReq) returns (DroneStatsResponse)
+
+	@handler QueryFlightRecords
+	post /api/flight/query (FlightRecordReq) returns (FlightRecordsResponse)
 
 	@handler GetUasStats
 	get /api/uas/stats returns (UasStatsResp)
+
+	@handler ExportFlightRecords
+	post /api/flight/export (FlightRecordReq) returns (FlightRecordsResponse)
 }
 

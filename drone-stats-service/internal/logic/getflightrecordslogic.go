@@ -26,7 +26,7 @@ func NewGetFlightRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (resp *types.FlightRecordResponse, err error) {
+func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (resp *types.DroneStatsResponse, err error) {
 	start, _ := time.Parse(time.RFC3339, req.StartTime)
 	end, _ := time.Parse(time.RFC3339, req.EndTime)
 	// 转为UTC0
@@ -37,7 +37,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		return nil, err
 	}
 	if len(records) == 0 {
-		return &types.FlightRecordResponse{}, nil
+		return &types.DroneStatsResponse{}, nil
 	}
 
 	// 找到TakeOff和Land点，提取本次飞行架次的所有点
@@ -60,29 +60,6 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 			break // 一次飞行架次结束
 		}
 	}
-	// // 临时收集所有Inflight点
-	// for _, r := range records {
-	// 	status, ok := r["flightStatus"].(string)
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	if status == "Inflight" {
-	// 		flightPoints = append(flightPoints, r)
-	// 	}
-	// }
-
-	if len(flightPoints) < 2 {
-		// return &types.FlightRecordResponse{}, nil // 无有效飞行架次
-
-		// 仅打印到终端，不存入MySQL
-		for i, r := range records {
-			l.Logger.Infof("测试打印: index=%d, record=%+v 结束", i, r)
-		}
-		return &types.FlightRecordResponse{}, nil
-	}
-
-	startPoint := flightPoints[0]
-	endPoint := flightPoints[len(flightPoints)-1]
 
 	getInt64 := func(m map[string]interface{}, key string) int64 {
 		if v, ok := m[key]; ok && v != nil {
@@ -103,6 +80,21 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		}
 		return ""
 	} // 获取string类型的值
+
+	if len(flightPoints) < 2 ||
+		getString(flightPoints[0], "flightStatus") != "TakeOff" ||
+		getString(flightPoints[len(flightPoints)-1], "flightStatus") != "Land" {
+		// return &types.DroneStatsResponse{}, nil // 无有效飞行架次
+
+		// 仅打印到终端，不存入MySQL
+		for i, r := range records {
+			l.Logger.Infof("无效架次: index=%d, record=%+v 结束", i, r)
+		}
+		return &types.DroneStatsResponse{}, nil
+	}
+
+	startPoint := flightPoints[0]
+	endPoint := flightPoints[len(flightPoints)-1]
 
 	startSOC := getInt64(startPoint, "SOC")
 	endSOC := getInt64(endPoint, "SOC")
@@ -137,7 +129,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	}
 	if exists {
 		l.Logger.Infof("该飞行架次已存在: uav_id=%s, start=%v, end=%v", fr.UavId, fr.StartTime, fr.EndTime)
-		return &types.FlightRecordResponse{}, nil
+		return &types.DroneStatsResponse{}, nil
 	}
 
 	flightRecordID, err := l.svcCtx.MySQLDao.SaveFlightRecordAndGetID(fr)
@@ -167,9 +159,9 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	}
 
 	// 返回整理后的飞行轨迹（原样返回，或可转换为实际值）
-	resp = &types.FlightRecordResponse{}
+	resp = &types.DroneStatsResponse{}
 	for _, r := range flightPoints {
-		resp.Records = append(resp.Records, types.FlightRecord{
+		resp.Records = append(resp.Records, types.DroneStats{
 			FlightCode:   req.FlightCode,
 			FlightStatus: getString(r, "flightStatus"),
 			TimeStamp:    r["_time"].(time.Time).Format(time.RFC3339),

@@ -1,0 +1,162 @@
+/* 全局样式 */
+body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+}
+
+/* 左侧导航栏样式 */
+.sidebar {
+    background-color: #1e62c0;
+    color: white;
+    min-height: 100vh;
+    padding: 0;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.logo-container {
+    padding: 20px 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.logo-container i {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.nav-item {
+    margin: 5px 0;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+}
+
+.nav-link i {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid white;
+}
+
+/* 内容区域样式 */
+.content-area {
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.header-container {
+    background-color: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+}
+
+/* 日期范围选择器样式 */
+.date-range-container {
+    margin-top: 10px;
+}
+
+.date-range-container .input-group {
+    width: auto;
+}
+
+.date-range-container .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.date-range-container input[type="date"] {
+    border-color: #ced4da;
+}
+
+/* 表格样式 */
+.card {
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 12px 15px;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-top: none;
+    font-size: 14px;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background-color: #1e62c0;
+    border-color: #1e62c0;
+}
+
+.btn-outline-primary {
+    color: #1e62c0;
+    border-color: #1e62c0;
+}
+
+.btn-outline-primary:hover {
+    background-color: #1e62c0;
+    color: white;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 分页样式 */
+.pagination .page-link {
+    color: #1e62c0;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #1e62c0;
+    border-color: #1e62c0;
+} 

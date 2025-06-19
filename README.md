@@ -29,7 +29,13 @@ docker-compose --version
 ```Shell
 # 如果 index.html 有修改则需要同步至 nginx
 # 把 index.html 移动到 nginx 默认网站根目录
-sudo cp ./drone-api/resources/index.html /var/www/html/
+sudo cp ./drone-api/resources/index.html /var/www/html/apiui
+sudo cp ./drone-stats-service/resources/index.html /var/www/html/stats/
+sudo cp ./drone-stats-service/resources/script.js /var/www/html/stats/
+sudo cp ./drone-stats-service/resources/styles.css /var/www/html/stats/
+sudo nginx -t
+sudo nginx -s reload
+sudo systemctl start nginx
 
 # 一键部署并启动服务
 ./deploy.sh

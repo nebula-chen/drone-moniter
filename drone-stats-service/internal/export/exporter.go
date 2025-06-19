@@ -18,13 +18,16 @@ func ExportFlightRecordsToCSV(records []types.FlightRecord, filename string) err
 	writer.Write([]string{"FlightCode", "StartTime", "EndTime", "Longitude", "Latitude", "Altitude", "Distance", "SOC"})
 	for _, r := range records {
 		writer.Write([]string{
-			r.FlightCode,
-			r.FlightStatus,
-			r.TimeStamp,
-			fmt.Sprintf("%d", r.Longitude),
-			fmt.Sprintf("%d", r.Latitude),
-			fmt.Sprintf("%d", r.Altitude),
-			fmt.Sprintf("%d", r.SOC),
+			fmt.Sprintf("%d", r.ID),
+			r.UavId,
+			r.StartTime,
+			r.EndTime,
+			fmt.Sprintf("%d", r.StartLng),
+			fmt.Sprintf("%d", r.StartLat),
+			fmt.Sprintf("%d", r.EndLng),
+			fmt.Sprintf("%d", r.EndLat),
+			fmt.Sprintf("%.2f", r.Distance),
+			fmt.Sprintf("%d", r.BatteryUsed),
 		})
 	}
 	return nil
