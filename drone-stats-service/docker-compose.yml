@@ -9,8 +9,8 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: 12345678
       TZ: Asia/Shanghai
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
     networks:

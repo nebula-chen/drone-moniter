@@ -3,7 +3,7 @@ Host: 0.0.0.0
 Port: 8088
 
 InfluxDBConfig:
-  Host: "localhost"
+  Host: "influxdb"
   Port: "8086"
   User: admin
   Password: "12345678"

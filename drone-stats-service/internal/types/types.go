@@ -3,7 +3,7 @@
 
 package types
 
-type FlightRecord struct {
+type DroneStats struct {
 	FlightCode   string `json:"flightCode"`
 	FlightStatus string `json:"flightStatus"`
 	TimeStamp    string `json:"timeStamp"`
@@ -13,14 +13,32 @@ type FlightRecord struct {
 	SOC          int    `json:"SOC"`
 }
 
+type DroneStatsResponse struct {
+	Records []DroneStats
+}
+
+type FlightRecord struct {
+	ID          int     `json:"id"`
+	UavId       string  `json:"uav_id"`
+	StartTime   string  `json:"start_time"`
+	EndTime     string  `json:"end_time"`
+	StartLat    int64   `json:"start_lat"`
+	StartLng    int64   `json:"start_lng"`
+	EndLat      int64   `json:"end_lat"`
+	EndLng      int64   `json:"end_lng"`
+	Distance    float64 `json:"distance"`
+	BatteryUsed int     `json:"battery_used"`
+	CreatedAt   string  `json:"created_at"`
+}
+
 type FlightRecordReq struct {
 	FlightCode string `json:"flightCode"`
 	StartTime  string `json:"startTime"`
 	EndTime    string `json:"endTime"`
 }
 
-type FlightRecordResponse struct {
-	Records []FlightRecord
+type FlightRecordsResponse struct {
+	Flightrecords []FlightRecord `json:"flightRecords"`
 }
 
 type UasStatsResp struct {

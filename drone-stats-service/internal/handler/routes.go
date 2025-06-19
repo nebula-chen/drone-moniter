@@ -16,6 +16,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
+				Path:    "/api/flight/export",
+				Handler: ExportFlightRecordsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/flight/query",
+				Handler: QueryFlightRecordsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/api/flight/records",
 				Handler: GetFlightRecordsHandler(serverCtx),
 			},

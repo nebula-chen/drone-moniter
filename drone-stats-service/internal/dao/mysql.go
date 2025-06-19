@@ -115,3 +115,57 @@ func (d *MySQLDao) FlightRecordExists(uavId string, startTime, endTime time.Time
 	).Scan(&cnt)
 	return cnt > 0, err
 }
+
+// 查询飞行记录（支持条件筛选）
+func (d *MySQLDao) QueryFlightRecords(uavId, startTime, endTime string) ([]map[string]interface{}, error) {
+	query := `SELECT id, uav_id, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
+        FROM flight_records WHERE 1=1`
+	args := []interface{}{}
+	if uavId != "" {
+		query += " AND uav_id=?"
+		args = append(args, uavId)
+	}
+	if startTime != "" {
+		query += " AND start_time >= ?"
+		args = append(args, startTime)
+	}
+	if endTime != "" {
+		query += " AND end_time <= ?"
+		args = append(args, endTime)
+	}
+	query += " ORDER BY start_time DESC LIMIT 100"
+	rows, err := d.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var records []map[string]interface{}
+	for rows.Next() {
+		var (
+			id, batteryUsed                    int
+			uavId                              string
+			startTime, endTime, createdAt      sql.NullTime
+			startLat, startLng, endLat, endLng sql.NullInt64
+			distance                           sql.NullFloat64
+		)
+		err := rows.Scan(&id, &uavId, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt)
+		if err != nil {
+			continue
+		}
+		record := map[string]interface{}{
+			"id":           id,
+			"uav_id":       uavId,
+			"start_time":   startTime.Time.Format("2006-01-02 15:04:05"),
+			"end_time":     endTime.Time.Format("2006-01-02 15:04:05"),
+			"start_lat":    startLat.Int64,
+			"start_lng":    startLng.Int64,
+			"end_lat":      endLat.Int64,
+			"end_lng":      endLng.Int64,
+			"distance":     distance.Float64,
+			"battery_used": batteryUsed,
+			"created_at":   createdAt.Time.Format("2006-01-02 15:04:05"),
+		}
+		records = append(records, record)
+	}
+	return records, nil
+}
