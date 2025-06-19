@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 添加查询按钮事件
     document.getElementById('search-btn').addEventListener('click', function() {
-        const uavId = document.querySelector('.input-group input').value.trim(); 
-        const startTime = document.getElementById('start-time').value;
-        const endTime = document.getElementById('end-time').value;
+        let uavId = document.querySelector('.input-group input').value.trim(); 
+        let startTime = document.getElementById('start-time').value;
+        let endTime = document.getElementById('end-time').value;
         // 如果输入框为空，则查询全部
         if (!uavId) uavId = ""; // 查询全部
         if (!startTime) startTime = "";
@@ -150,29 +150,54 @@ function searchFlightRecords(uavId, startTime, endTime) {
     });
 }
 
-// 渲染飞行记录数据
+let allFlightRecords = []; // 全部数据
+let currentPage = 1;
+const pageSize = 10;
+
+// 渲染飞行记录数据（带分页和倒序）
 function renderFlightRecords(data) {
+    // 倒序排序
+    data.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+    allFlightRecords = data;
+
+    renderFlightRecordsPage(1);
+    renderPagination();
+}
+
+// 渲染指定页
+function renderFlightRecordsPage(page) {
+    currentPage = page;
     const tbody = document.getElementById('flight-records');
     tbody.innerHTML = '';
 
-    if (data.length === 0) {
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, allFlightRecords.length);
+    const pageData = allFlightRecords.slice(startIdx, endIdx);
+
+    if (pageData.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `<td colspan="12" class="text-center">没有找到符合条件的记录</td>`;
         tbody.appendChild(row);
         return;
     }
 
-    data.forEach(record => {
+    pageData.forEach(record => {
+        // 经纬度还原
+        const startLat = record.start_lat !== null && record.start_lat !== undefined ? (record.start_lat / 1e7) : '';
+        const startLng = record.start_lng !== null && record.start_lng !== undefined ? (record.start_lng / 1e7) : '';
+        const endLat = record.end_lat !== null && record.end_lat !== undefined ? (record.end_lat / 1e7) : '';
+        const endLng = record.end_lng !== null && record.end_lng !== undefined ? (record.end_lng / 1e7) : '';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${record.id}</td>
             <td>${record.uav_id}</td>
             <td>${record.start_time}</td>
             <td>${record.end_time}</td>
-            <td>${record.start_lat}</td>
-            <td>${record.start_lng}</td>
-            <td>${record.end_lat}</td>
-            <td>${record.end_lng}</td>
+            <td>${startLat}</td>
+            <td>${startLng}</td>
+            <td>${endLat}</td>
+            <td>${endLng}</td>
             <td>${record.distance}</td>
             <td>${record.battery_used}</td>
             <td>${record.created_at}</td>
@@ -182,6 +207,52 @@ function renderFlightRecords(data) {
         `;
         tbody.appendChild(row);
     });
+}
+
+// 渲染分页控件
+function renderPagination() {
+    const totalPages = Math.ceil(allFlightRecords.length / pageSize);
+    const pagination = document.querySelector('.pagination');
+    pagination.innerHTML = '';
+
+    // 上一页
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item${currentPage === 1 ? ' disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#">上一页</a>`;
+    prevLi.onclick = function(e) {
+        e.preventDefault();
+        if (currentPage > 1) {
+            renderFlightRecordsPage(currentPage - 1);
+            renderPagination();
+        }
+    };
+    pagination.appendChild(prevLi);
+
+    // 页码
+    for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item${i === currentPage ? ' active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.onclick = function(e) {
+            e.preventDefault();
+            renderFlightRecordsPage(i);
+            renderPagination();
+        };
+        pagination.appendChild(li);
+    }
+
+    // 下一页
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item${currentPage === totalPages ? ' disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#">下一页</a>`;
+    nextLi.onclick = function(e) {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            renderFlightRecordsPage(currentPage + 1);
+            renderPagination();
+        }
+    };
+    pagination.appendChild(nextLi);
 }
 
 // 加载飞行轨迹点数据
