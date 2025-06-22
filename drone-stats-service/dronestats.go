@@ -40,6 +40,7 @@ func main() {
 	go func() {
 		ticker := time.NewTicker(15 * time.Second) // 每15秒拉取一次
 		defer ticker.Stop()
+		fmt.Println("开始拉取数据...")
 		for {
 			processAllUasData(ctx)
 			<-ticker.C

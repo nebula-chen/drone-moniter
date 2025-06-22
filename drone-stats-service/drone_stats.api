@@ -37,6 +37,12 @@ type FlightRecordsResponse {
 	flightrecords []FlightRecord `json:"flightRecords"`
 }
 
+type RecordsStatsResp {
+	TotalCount    int     `json:"totalCount"`
+	TotalDistance float64 `json:"totalDistance"`
+	TotalTime     int64   `json:"totalTime"`
+}
+
 type UasStatsResp {
 	total  int `json:"total"`
 	online int `json:"online"`
@@ -54,5 +60,8 @@ service droneStats {
 
 	@handler ExportFlightRecords
 	post /api/flight/export (FlightRecordReq) returns (FlightRecordsResponse)
+
+	@handler RecordsStats
+	post /api/flight/stats returns (RecordsStatsResp)
 }
 

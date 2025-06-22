@@ -30,6 +30,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: GetFlightRecordsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/flight/stats",
+				Handler: RecordsStatsHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/uas/stats",
 				Handler: GetUasStatsHandler(serverCtx),
