@@ -41,6 +41,12 @@ type FlightRecordsResponse struct {
 	Flightrecords []FlightRecord `json:"flightRecords"`
 }
 
+type RecordsStatsResp struct {
+	TotalCount    int     `json:"totalCount"`
+	TotalDistance float64 `json:"totalDistance"`
+	TotalTime     int64   `json:"totalTime"`
+}
+
 type UasStatsResp struct {
 	Total  int `json:"total"`
 	Online int `json:"online"`

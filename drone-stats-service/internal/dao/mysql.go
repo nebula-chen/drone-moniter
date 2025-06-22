@@ -169,3 +169,34 @@ func (d *MySQLDao) QueryFlightRecords(uavId, startTime, endTime string) ([]map[s
 	}
 	return records, nil
 }
+
+// 统计总飞行架次、总航程、总飞行时长（单位：秒）
+func (d *MySQLDao) GetFlightStats() (totalCount int, totalDistance float64, totalTime int64, err error) {
+	rows, err := d.DB.Query(`
+        SELECT start_time, end_time, distance FROM flight_records
+    `)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var (
+		startTime, endTime sql.NullTime
+		distance           sql.NullFloat64
+	)
+	for rows.Next() {
+		if err = rows.Scan(&startTime, &endTime, &distance); err != nil {
+			continue
+		}
+		totalCount++
+		if distance.Valid {
+			totalDistance += distance.Float64
+		}
+		if startTime.Valid && endTime.Valid {
+			dur := endTime.Time.Sub(startTime.Time).Seconds()
+			if dur > 0 {
+				totalTime += int64(dur)
+			}
+		}
+	}
+	return
+}
