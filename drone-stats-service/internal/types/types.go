@@ -3,6 +3,11 @@
 
 package types
 
+type DateCount struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
 type DroneStats struct {
 	FlightCode   string `json:"flightCode"`
 	FlightStatus string `json:"flightStatus"`
@@ -45,6 +50,23 @@ type RecordsStatsResp struct {
 	TotalCount    int     `json:"totalCount"`
 	TotalDistance float64 `json:"totalDistance"`
 	TotalTime     int64   `json:"totalTime"`
+}
+
+type SOCUsage struct {
+	Date  string `json:"date"`
+	Usage int    `json:"usage"`
+}
+
+type SOCUsageStatsResp struct {
+	YearStats  []SOCUsage `json:"yearStats"`
+	MonthStats []SOCUsage `json:"monthStats"`
+	DayStats   []SOCUsage `json:"dayStats"`
+}
+
+type TimeSeriesStatsResp struct {
+	YearStats  []DateCount `json:"yearStats"`
+	MonthStats []DateCount `json:"monthStats"`
+	DayStats   []DateCount `json:"dayStats"`
 }
 
 type UasStatsResp struct {

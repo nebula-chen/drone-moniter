@@ -15,28 +15,38 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodGet,
+				Path:    "/record/SOCUsage",
+				Handler: SOCUsageStatsHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
-				Path:    "/api/flight/export",
+				Path:    "/record/export",
 				Handler: ExportFlightRecordsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
-				Path:    "/api/flight/query",
-				Handler: QueryFlightRecordsHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/flight/records",
+				Path:    "/record/get",
 				Handler: GetFlightRecordsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
-				Path:    "/api/flight/stats",
+				Path:    "/record/query",
+				Handler: QueryFlightRecordsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/record/stats",
 				Handler: RecordsStatsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/uas/stats",
+				Path:    "/record/timeSeries",
+				Handler: TimeSeriesStatsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/record/uas",
 				Handler: GetUasStatsHandler(serverCtx),
 			},
 		},

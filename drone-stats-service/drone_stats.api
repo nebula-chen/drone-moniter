@@ -48,20 +48,48 @@ type UasStatsResp {
 	online int `json:"online"`
 }
 
+type DateCount {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+type TimeSeriesStatsResp {
+	YearStats  []DateCount `json:"yearStats"`
+	MonthStats []DateCount `json:"monthStats"`
+	DayStats   []DateCount `json:"dayStats"`
+}
+
+type SOCUsage {
+	Date  string `json:"date"`
+	Usage int    `json:"usage"`
+}
+
+type SOCUsageStatsResp {
+	YearStats  []SOCUsage `json:"yearStats"`
+	MonthStats []SOCUsage `json:"monthStats"`
+	DayStats   []SOCUsage `json:"dayStats"`
+}
+
 service droneStats {
 	@handler GetFlightRecords
-	post /api/flight/records (FlightRecordReq) returns (DroneStatsResponse)
+	post /record/get (FlightRecordReq) returns (DroneStatsResponse)
 
 	@handler QueryFlightRecords
-	post /api/flight/query (FlightRecordReq) returns (FlightRecordsResponse)
+	post /record/query (FlightRecordReq) returns (FlightRecordsResponse)
 
 	@handler GetUasStats
-	get /api/uas/stats returns (UasStatsResp)
+	get /record/uas returns (UasStatsResp)
 
 	@handler ExportFlightRecords
-	post /api/flight/export (FlightRecordReq) returns (FlightRecordsResponse)
+	post /record/export (FlightRecordReq) returns (FlightRecordsResponse)
 
 	@handler RecordsStats
-	post /api/flight/stats returns (RecordsStatsResp)
+	post /record/stats returns (RecordsStatsResp)
+
+	@handler TimeSeriesStats
+	get /record/timeSeries returns (TimeSeriesStatsResp)
+
+	@handler SOCUsageStats
+	get /record/SOCUsage returns (SOCUsageStatsResp)
 }
 

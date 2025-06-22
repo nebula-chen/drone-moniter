@@ -1,101 +1,16 @@
-//交通流量
-var data = {
-    id: 'multipleBarsLines',
-    symbol: ' ', //数值是否带百分号        --默认为空 ''
-    xAxis: ['6.16', '6.17', '6.18', '6.19', '6.20',
-        '6.21'
-    ],
-    yAxis: [
-        [8, 3, 6, 5, 4, 4],
-    ],
-    barColor: ['#009883'], //柱子颜色 必填参数
-}
+// ================== 飞行架次统计 ================== //
 
-var myData = (function test() {
-    let yAxis = data.yAxis || []
-    let lines = data.lines || []
-    let legendBar = data.legendBar || []
-    let legendLine = data.legendLine || []
-    var symbol = data.symbol || ' '
-    let seriesArr = []
-    let legendArr = []
-    yAxis && yAxis.forEach((item, index) => {
-        legendArr.push({
-            name: legendBar && legendBar.length > 0 && legendBar[index]
-        })
-        seriesArr.push({
-            name: legendBar && legendBar.length > 0 && legendBar[index],
-            type: 'bar',
-            barGap: '0.5px',
-            data: item,
-            barWidth: data.barWidth || 12,
-            label: {
-                normal: {
-                    show: false,
-                    formatter: '{c}' + symbol,
-                    position: 'top',
-                    textStyle: {
-                        color: '#000',
-                        fontStyle: 'normal',
-                        fontFamily: '微软雅黑',
-                        textAlign: 'left',
-                        fontSize: 11,
-                    },
-                },
-            },
-            itemStyle: { //图形样式
-                normal: {
-                    barBorderRadius:0,
-                    borderWidth:1,
-                    borderColor:'#ddd',
-                    color: data.barColor[index]
-                },
-            }
-        })
-    })
-
-    lines && lines.forEach((item, index) => {
-        legendArr.push({
-            name: legendLine && legendLine.length > 0 && legendLine[index]
-        })
-        seriesArr.push({
-            name: legendLine && legendLine.length > 0 && legendLine[index],
-            type: 'line',
-            data: item,
-            itemStyle: {
-                normal: {
-                    color: data.lineColor[index],
-                    lineStyle: {
-                        width: 2,//折线宽度
-                        type: 'solid',
-                    }
-                }
-            },
-            label: {
-                normal: {
-                    show: false, //折线上方label控制显示隐藏
-                    position: 'top',
-                }
-            },
-            symbol: 'circle',
-            symbolSize: 5
-        })
-    })
-
-    return {
-        seriesArr,
-        legendArr
-    }
-})()
+// 直接定义 option1，去除 data/myData 依赖
 option1 = {
     title: {
         show: true,
-        text: data.title,
-        subtext: data.subTitle,
-        link: '1111'
+        text: '',
+        subtext: '',
+        link: ''
     },
     tooltip: {
         trigger: 'axis',
+        axisPointer: { type: 'none' },
         formatter: function(params) {
             var time = '';
             var str = '';
@@ -104,24 +19,19 @@ option1 = {
                 if (i.data == 'null' || i.data == null) {
                     str += i.seriesName + '：无数据' + '<br/>'
                 } else {
-                    str += i.seriesName + '：' + i.data + symbol + '%<br/>'
+                    str += i.seriesName + '：' + i.data + '<br/>'
                 }
-
             }
             return time + str;
-        },
-        axisPointer: {
-            type: 'none'
-        },
+        }
     },
     legend: {
-        right: data.legendRight || '30%',
+        right: 10,
         top: 0,
-        right:10,
         itemGap: 16,
         itemWidth: 10,
         itemHeight: 10,
-        data: myData.legendArr,
+        data: [],
         textStyle: {
             color: '#fff',
             fontStyle: 'normal',
@@ -131,39 +41,34 @@ option1 = {
     },
     grid: {
         x: 0,
-        y: 30,
+        y: 40,
         x2: 0,
-        y2: 25,
+        y2: 40,
     },
     xAxis: {
         type: 'category',
-        data: data.xAxis,
-        axisTick: {
-            show: false,
-        },
-
-        axisLine: {
-            show: false,
-        },
-        axisLabel: {       //轴标
+        data: [],
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: {
             show: true,
-            interval: '0',
+            interval: 0,
             textStyle: {
-                lineHeight:5,
+                lineHeight: 5,
                 padding: [2, 2, 0, 2],
                 height: 50,
                 fontSize: 12,
-                color:'#fff',
+                color: '#fff',
             },
             rich: {
                 Sunny: {
                     height: 50,
-                    // width: 60,
                     padding: [0, 5, 0, 5],
                     align: 'center',
                 },
             },
-            formatter: function(params, index) {
+            formatter: function(params) {
+                // 保持原有多行显示逻辑
                 var newParamsName = "";
                 var splitNumber = 5;
                 var paramsNameNumber = params && params.length;
@@ -178,8 +83,7 @@ option1 = {
                 } else {
                     params = params && params.slice(0, 15);
                 }
-
-                var provideNumber = splitNumber; //一行显示几个字
+                var provideNumber = splitNumber;
                 var rowNumber = Math.ceil(paramsNameNumber / provideNumber) || 0;
                 if (paramsNameNumber > provideNumber) {
                     for (var p = 0; p < rowNumber; p++) {
@@ -193,7 +97,6 @@ option1 = {
                         }
                         newParamsName += tempStr;
                     }
-
                 } else {
                     newParamsName = params;
                 }
@@ -202,18 +105,11 @@ option1 = {
             },
             color: '#687284',
         },
-
     },
     yAxis: {
-        axisLine: {
-            show: false
-        },
-        axisTick: {
-            show: false
-        },
-        axisLabel: {
-            show: false
-        },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { show: false },
         splitLine: {
             show: true,
             lineStyle: {
@@ -224,9 +120,37 @@ option1 = {
         },
         splitNumber: 4,
     },
-    series: myData.seriesArr
+    series: [{
+        name: '',
+        type: 'bar',
+        barGap: '0.5px',
+        data: [],
+        barWidth: 12,
+        label: {
+            normal: {
+                show: false,
+                formatter: '{c}',
+                position: 'top',
+                textStyle: {
+                    color: '#000',
+                    fontStyle: 'normal',
+                    fontFamily: '微软雅黑',
+                    textAlign: 'left',
+                    fontSize: 11,
+                },
+            },
+        },
+        itemStyle: {
+            normal: {
+                barBorderRadius: 0,
+                borderWidth: 1,
+                borderColor: '#ddd',
+                color: '#009883'
+            },
+        }
+    }]
 }
-//////////////////////交通流量 end
+// ================== 飞行架次统计 end ============== //
 
 //////////////////////交通工具流量
 option2 = {

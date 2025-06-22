@@ -45,15 +45,24 @@
 					<span>飞行架次统计</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="visual_chart" id="main1">
-					
+				<div class="visual_chart_switch">
+					<button id="btn-year">年</button>
+					<button id="btn-month">月</button>
+					<button id="btn-day" class="active">日</button>
 				</div>
+				<div class="visual_chart" id="main1"></div>
 			</div>
 			<div class="visual_box">
 				<div class="visual_title">
-					<span>xxx统计</span>
+					<span>飞行耗电统计</span>
 					<img src="images/ksh33.png">
 				</div>
+				<div class="visual_chart_switch">
+					<button id="btn-year-soc">年</button>
+					<button id="btn-month-soc">月</button>
+					<button id="btn-day-soc" class="active">日</button>
+				</div>
+				<div class="visual_chart" id="main_soc"></div>
 			</div>
 			<div class="visual_box">
 				<div class="visual_title">
@@ -167,14 +176,14 @@
 
 				</div> -->
 			</div>
-            <button class="bottom-jump-btn" onclick="window.location.href='http://192.168.1.108:8080/recordsui'">页面跳转</button>
+            <button class="bottom-jump-btn" onclick="window.location.href='http://172.25.74.79:8080/recordsui'">页面跳转</button>
 		</div>
 		<div class="clear"></div>
 	</div>
 	<script type="text/javascript">
 		function loadFlightStats() {
 			$.ajax({
-				url: "/api/flight/stats",
+				url: "/record/stats",
 				type: "POST",
 				contentType: "application/json",
 				success: function(res) {
@@ -209,6 +218,113 @@
 			});
 		} 
 		
+		function updateFlightChart(type, stats) {
+			let xAxis = [];
+			let yAxis = [];
+			if (type === 'year') {
+				xAxis = (stats.yearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || []).map(item => item.count);
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || []).map(item => item.date.slice(5)); // 取 MM 部分
+				yAxis = (stats.monthStats || []).map(item => item.count);
+			} else {
+				xAxis = (stats.dayStats || []).map(item => item.date.slice(5)); // 取 MM-DD 部分
+				yAxis = (stats.dayStats || []).map(item => item.count);
+			}
+			option1.xAxis = xAxis;
+			if (option1.series && option1.series.length > 0) {
+				option1.series[0].data = yAxis;
+			}
+			myChart1.setOption({
+				xAxis: { data: xAxis },
+				series: [{ data: yAxis }]
+			});
+		}
+
+		let cachedStats = null;
+		function loadRecordsTimeSeries(type = 'day') {
+			$.ajax({
+				url: "/record/timeSeries",
+				type: "GET",
+				success: function(res) {
+					cachedStats = res;
+					updateFlightChart(type, res);
+				}
+			});
+		}
+
+		// 飞行架次统计按钮
+		$('#btn-year').click(function() {
+			$('#btn-year,#btn-month,#btn-day').removeClass('active');
+			$(this).addClass('active');
+			if (cachedStats) updateFlightChart('year', cachedStats);
+		});
+		$('#btn-month').click(function() {
+			$('#btn-year,#btn-month,#btn-day').removeClass('active');
+			$(this).addClass('active');
+			if (cachedStats) updateFlightChart('month', cachedStats);
+		});
+		$('#btn-day').click(function() {
+			$('#btn-year,#btn-month,#btn-day').removeClass('active');
+			$(this).addClass('active');
+			if (cachedStats) updateFlightChart('day', cachedStats);
+		});
+
+		// ================== 飞行耗电统计 ================== //
+		var optionSOC = JSON.parse(JSON.stringify(option1));
+		optionSOC.series[0].name = '耗电量';
+		optionSOC.title.text = '';
+		optionSOC.series[0].data = [];
+		optionSOC.xAxis.data = [];
+
+		function updateSOCChart(type, stats) {
+			let xAxis = [];
+			let yAxis = [];
+			if (type === 'year') {
+				xAxis = (stats.yearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || []).map(item => item.usage);
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.monthStats || []).map(item => item.usage);
+			} else {
+				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.dayStats || []).map(item => item.usage);
+			}
+			myChartSOC.setOption({
+				xAxis: { data: xAxis },
+				series: [{ name: '耗电量', data: yAxis }]
+			});
+		}
+
+		let cachedSOCStats = null;
+		function loadSOCUsageStats(type = 'day') {
+			$.ajax({
+				url: "/record/SOCUsage",
+				type: "GET",
+				success: function(res) {
+					cachedSOCStats = res;
+					updateSOCChart(type, res);
+				}
+			});
+		}
+
+		// 飞行耗电统计按钮
+		$('#btn-year-soc').click(function() {
+			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
+			$(this).addClass('active');
+			if (cachedSOCStats) updateSOCChart('year', cachedSOCStats);
+		});
+		$('#btn-month-soc').click(function() {
+			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
+			$(this).addClass('active');
+			if (cachedSOCStats) updateSOCChart('month', cachedSOCStats);
+		});
+		$('#btn-day-soc').click(function() {
+			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
+			$(this).addClass('active');
+			if (cachedSOCStats) updateSOCChart('day', cachedSOCStats);
+		});
+
 		$(function(){
 			var a=$('.visualSssf_left a')
 			for(var i=0;i<a.length;i++){
@@ -235,6 +351,8 @@
 
 			loadFlightStats(); // 加载飞行架次、航程、飞行时长
 			loadOnlineCount(); // 加载当前架次
+			loadRecordsTimeSeries(); // 默认加载日统计
+			loadSOCUsageStats(); // 默认加载日统计
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadOnlineCount, 10000); // 每10秒刷新一次在线架次
@@ -244,6 +362,9 @@
 		var myChart1 = echarts.init(document.getElementById('main1'));
 		myChart1.setOption(option1);
 		//本月发生事件
+		var myChartSOC = echarts.init(document.getElementById('main_soc'));
+		myChartSOC.setOption(optionSOC);
+
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		myChart3.setOption(option3);
 		var mySwiper1 = new Swiper('.visual_swiper1', {
