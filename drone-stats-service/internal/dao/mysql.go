@@ -200,3 +200,95 @@ func (d *MySQLDao) GetFlightStats() (totalCount int, totalDistance float64, tota
 	}
 	return
 }
+
+// 按年、月、日统计飞行架次
+func (d *MySQLDao) GetFlightRecordsStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
+	// 年统计
+	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, COUNT(*) as count FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var date string
+		var count int
+		if err := rows.Scan(&date, &count); err == nil {
+			yearStats = append(yearStats, map[string]interface{}{"date": date, "count": count})
+		}
+	}
+
+	// 月统计
+	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, COUNT(*) as count FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var date string
+		var count int
+		if err := rows2.Scan(&date, &count); err == nil {
+			monthStats = append(monthStats, map[string]interface{}{"date": date, "count": count})
+		}
+	}
+
+	// 日统计
+	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, COUNT(*) as count FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var date string
+		var count int
+		if err := rows3.Scan(&date, &count); err == nil {
+			dayStats = append(dayStats, map[string]interface{}{"date": date, "count": count})
+		}
+	}
+	return
+}
+
+// 按年、月、日统计飞行耗电量
+func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
+	// 年统计
+	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var date string
+		var total int
+		if err := rows.Scan(&date, &total); err == nil {
+			yearStats = append(yearStats, map[string]interface{}{"date": date, "total": total})
+		}
+	}
+
+	// 月统计
+	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var date string
+		var total int
+		if err := rows2.Scan(&date, &total); err == nil {
+			monthStats = append(monthStats, map[string]interface{}{"date": date, "total": total})
+		}
+	}
+
+	// 日统计
+	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var date string
+		var total int
+		if err := rows3.Scan(&date, &total); err == nil {
+			dayStats = append(dayStats, map[string]interface{}{"date": date, "total": total})
+		}
+	}
+	return
+}
