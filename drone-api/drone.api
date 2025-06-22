@@ -54,19 +54,9 @@ type FlightStatsResp {
 	TotalDistance float64 `json:"totalDistance"`
 }
 
-type RecordItem {
-	StartTime   int64   `json:"startTime"`
-	EndTime     int64   `json:"endTime"`
-	UavId       string  `json:"uavId"`
-	Distance    float64 `json:"distance"`
-	BatteryUsed int     `json:"batteryUsed"`
-}
-
-type FlightRecordListResp {
-	Total        int          `json:"total"`
-	Records      []RecordItem `json:"records"`
-	TotalUav     int          `json:"totalUav"`
-	TotalFlights int          `json:"totalFlights"`
+// 新增：在线架次响应体
+type OnlineCountResp {
+	Count int `json:"count"`
 }
 
 service drone-api {
@@ -75,5 +65,8 @@ service drone-api {
 
 	@handler HandleWebSocket
 	get /api/ws
+
+	@handler HandleOnlineCount
+	get /api/drone/online_count returns (OnlineCountResp)
 }
 

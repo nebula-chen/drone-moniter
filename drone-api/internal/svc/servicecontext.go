@@ -5,6 +5,8 @@ import (
 	"drone-api/internal/config"
 	"drone-api/internal/dao"
 	"drone-api/internal/websocket"
+	"sync"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
@@ -13,6 +15,8 @@ type ServiceContext struct {
 	Config config.Config
 	WSHub  *websocket.Hub
 	Dao    *dao.InfluxDao
+
+	OnlineDrones sync.Map // key: uasID, value: time.Time
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -29,9 +33,26 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		panic("InfluxDB connect error: " + err.Error())
 	}
-	return &ServiceContext{
+	ctx := &ServiceContext{
 		Config: c,
 		WSHub:  hub,
 		Dao:    dao.NewInfluxDao(client, c.InfluxDBConfig.Org, c.InfluxDBConfig.Bucket),
 	}
+
+	// 启动定时清理协程
+	go func() {
+		for {
+			now := time.Now()
+			ctx.OnlineDrones.Range(func(key, value interface{}) bool {
+				lastTime, ok := value.(time.Time)
+				if ok && now.Sub(lastTime) > time.Minute {
+					ctx.OnlineDrones.Delete(key)
+				}
+				return true
+			})
+			time.Sleep(10 * time.Second)
+		}
+	}()
+
+	return ctx
 }
