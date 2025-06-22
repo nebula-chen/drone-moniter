@@ -34,13 +34,6 @@ type DroneStatusResp struct {
 	ErrorMsg bool   `json:"errorMsg"`
 }
 
-type FlightRecordListResp struct {
-	Total        int          `json:"total"`
-	Records      []RecordItem `json:"records"`
-	TotalUav     int          `json:"totalUav"`
-	TotalFlights int          `json:"totalFlights"`
-}
-
 type FlightRecordReq struct {
 	UasId       string `json:"uasId"`
 	StartTime   string `json:"startTime"` // ISO8601格式
@@ -62,10 +55,6 @@ type FlightStatsResp struct {
 	TotalDistance float64 `json:"totalDistance"`
 }
 
-type RecordItem struct {
-	StartTime   int64   `json:"startTime"`
-	EndTime     int64   `json:"endTime"`
-	UavId       string  `json:"uavId"`
-	Distance    float64 `json:"distance"`
-	BatteryUsed int     `json:"batteryUsed"`
+type OnlineCountResp struct {
+	Count int `json:"count"`
 }

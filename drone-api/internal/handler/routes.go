@@ -15,6 +15,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/drone/online_count",
+				Handler: HandleOnlineCountHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/drone/status",
 				Handler: HandleDroneStatusHandler(serverCtx),

@@ -195,6 +195,19 @@
 				}
 			});
 		}
+
+		function loadOnlineCount() {
+			$.ajax({
+				url: "/api/drone/online_count",
+				type: "GET",
+				success: function(res) {
+					$('.visual_conTop_box:eq(3) p').text(res.count);
+				},
+				error: function() {
+					$('.visual_conTop_box:eq(3) p').text('--');
+				}
+			});
+		} 
 		
 		$(function(){
 			var a=$('.visualSssf_left a')
@@ -221,6 +234,10 @@
 			,1100);
 
 			loadFlightStats(); // 加载飞行架次、航程、飞行时长
+			loadOnlineCount(); // 加载当前架次
+
+			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
+			setInterval(loadOnlineCount, 10000); // 每10秒刷新一次在线架次
 		})
 
 		//交通流量
@@ -233,7 +250,7 @@
 			autoplay: true,//可选选项，自动滑动
 			speed:800,//可选选项，滑动速度
 			autoplay: {
-				delay: 5000,//1秒切换一次
+				delay: 5000,//5秒切换一次
 			},
 		})
 	</script>

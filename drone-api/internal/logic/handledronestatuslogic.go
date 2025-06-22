@@ -46,6 +46,11 @@ func (l *HandleDroneStatusLogic) HandleDroneStatus(req *types.DroneStatusReq) (r
 	// 2. 写入点
 	_ = l.svcCtx.Dao.AddPoint(point)
 
+	// 更新无人机在线状态
+	if req.UasID != "" {
+		l.svcCtx.OnlineDrones.Store(req.UasID, time.Now())
+	}
+
 	resp = &types.DroneStatusResp{
 		Code: "200",
 	}
