@@ -24,4 +24,5 @@ type FlightTrackPoint struct {
 	Latitude       float64
 	Altitude       float64
 	SOC            int
+	GS             float64 // 新增字段：速度
 }

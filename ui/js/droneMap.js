@@ -158,7 +158,7 @@ window.addEventListener('load', function() {
         
         connectWebSocket() {
             // 创建WebSocket连接
-            this.socket = new WebSocket('ws://192.168.1.108:19999/api/ws');
+            this.socket = new WebSocket('ws://172.25.74.79:19999/api/ws');
             
             // 更新连接状态为"连接中"
             const statusEl = document.getElementById('connection-status');

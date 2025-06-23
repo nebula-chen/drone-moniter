@@ -69,38 +69,38 @@ option1 = {
             },
             formatter: function(params) {
                 // 保持原有多行显示逻辑
-                var newParamsName = "";
-                var splitNumber = 5;
-                var paramsNameNumber = params && params.length;
-                if (paramsNameNumber && paramsNameNumber <= 4) {
-                    splitNumber = 4;
-                } else if (paramsNameNumber >= 5 && paramsNameNumber <= 7) {
-                    splitNumber = 4;
-                } else if (paramsNameNumber >= 8 && paramsNameNumber <= 9) {
-                    splitNumber = 5;
-                } else if (paramsNameNumber >= 10 && paramsNameNumber <= 14) {
-                    splitNumber = 5;
-                } else {
-                    params = params && params.slice(0, 15);
-                }
-                var provideNumber = splitNumber;
-                var rowNumber = Math.ceil(paramsNameNumber / provideNumber) || 0;
-                if (paramsNameNumber > provideNumber) {
-                    for (var p = 0; p < rowNumber; p++) {
-                        var tempStr = "";
-                        var start = p * provideNumber;
-                        var end = start + provideNumber;
-                        if (p == rowNumber - 1) {
-                            tempStr = params.substring(start, paramsNameNumber);
-                        } else {
-                            tempStr = params.substring(start, end) + "\n";
-                        }
-                        newParamsName += tempStr;
-                    }
-                } else {
-                    newParamsName = params;
-                }
-                params = newParamsName
+                // var newParamsName = "";
+                // var splitNumber = 5;
+                // var paramsNameNumber = params && params.length;
+                // if (paramsNameNumber && paramsNameNumber <= 4) {
+                //     splitNumber = 4;
+                // } else if (paramsNameNumber >= 5 && paramsNameNumber <= 7) {
+                //     splitNumber = 4;
+                // } else if (paramsNameNumber >= 8 && paramsNameNumber <= 9) {
+                //     splitNumber = 5;
+                // } else if (paramsNameNumber >= 10 && paramsNameNumber <= 14) {
+                //     splitNumber = 5;
+                // } else {
+                //     params = params && params.slice(0, 15);
+                // }
+                // var provideNumber = splitNumber;
+                // var rowNumber = Math.ceil(paramsNameNumber / provideNumber) || 0;
+                // if (paramsNameNumber > provideNumber) {
+                //     for (var p = 0; p < rowNumber; p++) {
+                //         var tempStr = "";
+                //         var start = p * provideNumber;
+                //         var end = start + provideNumber;
+                //         if (p == rowNumber - 1) {
+                //             tempStr = params.substring(start, paramsNameNumber);
+                //         } else {
+                //             tempStr = params.substring(start, end) + "\n";
+                //         }
+                //         newParamsName += tempStr;
+                //     }
+                // } else {
+                //     newParamsName = params;
+                // }
+                // params = newParamsName
                 return '{Sunny|' + params + '}';
             },
             color: '#687284',
