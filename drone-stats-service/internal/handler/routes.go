@@ -40,6 +40,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: QueryFlightRecordsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/record/recentTracks",
+				Handler: RecentTracksHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/record/stats",
 				Handler: RecordsStatsHandler(serverCtx),

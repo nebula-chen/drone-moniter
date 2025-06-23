@@ -316,3 +316,34 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64
 	}
 	return
 }
+
+// 查询某条飞行记录的所有轨迹点
+func (d *MySQLDao) GetTrackPointsByRecordId(recordId int) ([]map[string]interface{}, error) {
+	rows, err := d.DB.Query(`
+        SELECT flight_status, time_stamp, longitude, latitude, altitude, soc
+        FROM flight_track_points
+        WHERE flight_record_id = ?
+        ORDER BY time_stamp ASC
+    `, recordId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var points []map[string]interface{}
+	for rows.Next() {
+		var flightStatus, timeStamp string
+		var longitude, latitude int64
+		var altitude, soc int
+		if err := rows.Scan(&flightStatus, &timeStamp, &longitude, &latitude, &altitude, &soc); err == nil {
+			points = append(points, map[string]interface{}{
+				"flightStatus": flightStatus,
+				"timeStamp":    timeStamp,
+				"longitude":    longitude,
+				"latitude":     latitude,
+				"altitude":     altitude,
+				"SOC":          soc,
+			})
+		}
+	}
+	return points, nil
+}

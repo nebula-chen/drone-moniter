@@ -87,7 +87,7 @@
 				</div>
 				<div class="visual_conTop_box visual_conTop1">
 					<div>
-						<h3>飞行时长(min)</h3>
+						<h3>飞行时长(h)</h3>
 						<p>58.68</p>
 					</div>
 				</div>
@@ -126,18 +126,14 @@
 					</div>
 					<div class="control-panel">
 						<div class="control-group">
-							<button class="control-btn" id="rotateLeft">←旋转</button>
-							<button class="control-btn reset" id="resetRotation">重置</button>
-							<button class="control-btn" id="rotateRight">旋转→</button>
+							<button class="control-btn" id="resetRotation">平面俯视</button>
 						</div>
 						<div class="control-group">
-							<button class="control-btn" id="pitchUp">⋀视角</button>
-							<button class="control-btn" id="pitchDown">⋁视角</button>
+							<button class="control-btn" id="axonometric">轨迹投影</button>
 						</div>
-						<div class="control-group">
-							<button class="control-btn" id="zoomIn">放大</button>
-							<button class="control-btn" id="zoomOut">缩小</button>
-						</div>
+						<!-- <div class="control-group">
+							<button class="control-btn" id="altitudeCurve">高度曲线</button>
+						</div> -->
 						<div class="control-group">
 							<button class="control-btn toggle active" id="togglePaths">隐藏轨迹</button>
 						</div>
@@ -184,15 +180,16 @@
 					<span>其他</span>
 					<img src="images/ksh33.png">
 				</div>
-				<!-- <div class="swiper-container visual_swiper2 visual_chart">
+				<div class="swiper-container visual_swiper2 visual_chart">
 
-				</div> -->
+				</div>
 			</div> -->
             <button class="bottom-jump-btn" onclick="window.location.href='http://192.168.1.108:8080/recordsui'">页面跳转</button>
 		</div>
 		<div class="clear"></div>
 	</div>
 	<script type="text/javascript">
+		// ================== 总架次、航程、时长统计 ================== //
 		function loadFlightStats() {
 			$.ajax({
 				url: "/record/stats",
@@ -217,6 +214,7 @@
 			});
 		}
 
+		// ================== 在线架次统计 ================== //
 		function loadOnlineCount() {
 			$.ajax({
 				url: "/api/drone/online_count",
@@ -230,6 +228,7 @@
 			});
 		} 
 		
+		// ================== 飞行架次统计 ================== //
 		function updateFlightChart(type, stats) {
 			let xAxis = [];
 			let yAxis = [];
@@ -337,6 +336,31 @@
 			if (cachedSOCStats) updateSOCChart('day', cachedSOCStats);
 		});
 
+		// ================== 平均统计 ================== //
+		function loadAvgStats() {
+			$.ajax({
+				url: "/record/avgStats",
+				type: "GET",
+				success: function(res) {
+					// 平均飞行速度(km/h)，后端单位为 m/s，前端需转为 km/h，保留两位小数
+					$('.visual_rightCon_box:eq(0) p').text((res.avgGS * 3.6).toFixed(2));
+					// 平均飞行时间(min)，后端单位为秒，前端转为分钟，保留两位小数
+					$('.visual_rightCon_box:eq(1) p').text((res.avgFlightTime / 60).toFixed(2));
+					// 平均耗电(百分比)，保留两位小数
+					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(2));
+					// 平均载货量(kg)，后端未提供，显示 "--"
+					$('.visual_rightCon_box:eq(3) p').text('--');
+				},
+				error: function() {
+					$('.visual_rightCon_box:eq(0) p').text('--');
+					$('.visual_rightCon_box:eq(1) p').text('--');
+					$('.visual_rightCon_box:eq(2) p').text('--');
+					$('.visual_rightCon_box:eq(3) p').text('--');
+				}
+			});
+		}
+
+		// ================== 页面载入 ================== //
 		$(function(){
 			var a=$('.visualSssf_left a')
 			for(var i=0;i<a.length;i++){
@@ -365,9 +389,13 @@
 			loadOnlineCount(); // 加载当前架次
 			loadRecordsTimeSeries(); // 默认加载日统计
 			loadSOCUsageStats(); // 默认加载日统计
+			loadAvgStats(); // 加载平均统计
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
-			setInterval(loadOnlineCount, 10000); // 每10秒刷新一次在线架次
+			setInterval(loadOnlineCount, 10 * 1000); // 每10秒刷新一次在线架次
+			setInterval(loadRecordsTimeSeries, 2 * 3600 * 1000); // 每2小时刷新一次
+			setInterval(loadSOCUsageStats, 2 * 3600 * 1000); // 每2小时刷新一次
+			setInterval(loadAvgStats, 2 * 3600 * 1000); // 每2小时刷新一次
 		})
 
 		//交通流量

@@ -5,7 +5,7 @@ type FlightRecordReq {
 	endTime    string `json:"endTime"`
 }
 
-type DroneStats {
+type TrackPoints {
 	FlightCode   string `json:"flightCode"`
 	FlightStatus string `json:"flightStatus"`
 	TimeStamp    string `json:"timeStamp"`
@@ -15,8 +15,8 @@ type DroneStats {
 	SOC          int    `json:"SOC"`
 }
 
-type DroneStatsResponse {
-	records []DroneStats
+type TrackResponse {
+	records []TrackPoints `json:trackPoints`
 }
 
 type FlightRecord {
@@ -78,7 +78,7 @@ type AvgStatsResp {
 
 service droneStats {
 	@handler GetFlightRecords
-	post /record/get (FlightRecordReq) returns (DroneStatsResponse)
+	post /record/get (FlightRecordReq) returns (TrackResponse)
 
 	@handler QueryFlightRecords
 	post /record/query (FlightRecordReq) returns (FlightRecordsResponse)
@@ -100,5 +100,8 @@ service droneStats {
 
 	@handler AvgStats
 	get /record/avgStats returns (AvgStatsResp)
+
+	@handler RecentTracks
+	get /record/recentTracks returns (TrackResponse)
 }
 
