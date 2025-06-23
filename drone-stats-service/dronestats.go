@@ -38,7 +38,7 @@ func main() {
 
 	// 启动定时任务
 	go func() {
-		ticker := time.NewTicker(15 * time.Second) // 每15秒拉取一次
+		ticker := time.NewTicker(5 * time.Minute) // 每15秒拉取一次
 		defer ticker.Stop()
 		fmt.Println("开始拉取数据...")
 		for {
@@ -48,6 +48,7 @@ func main() {
 	}()
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+	// processAllUasData(ctx)
 	server.Start()
 }
 
@@ -64,7 +65,7 @@ func processAllUasData(ctx *svc.ServiceContext) {
 		}
 		// 拉取该无人机近一段时间的飞行数据并处理
 		end := time.Now().UTC()
-		start := end.Add(-24 * time.Hour) // 例如只处理最近24小时
+		start := end.Add(-1 * time.Hour) // 例如只处理最近24小时
 		// 复用已有逻辑
 		req := &types.FlightRecordReq{
 			FlightCode: id,
@@ -123,7 +124,8 @@ func autoMigrate(db *sql.DB) error {
         longitude BIGINT,
         latitude BIGINT,
         altitude DOUBLE(6,1),
-        soc INT
+        soc INT,
+		gs BIGINT
     );`)
 	return err
 }

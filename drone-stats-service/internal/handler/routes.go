@@ -20,6 +20,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: SOCUsageStatsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/record/avgStats",
+				Handler: AvgStatsHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/record/export",
 				Handler: ExportFlightRecordsHandler(serverCtx),

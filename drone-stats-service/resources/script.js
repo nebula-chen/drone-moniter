@@ -108,7 +108,7 @@ function showContent(contentType) {
 
 // 加载飞行记录数据
 function loadFlightRecords() {
-    fetch('/api/flight/query', {
+    fetch('/record/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,7 +132,7 @@ function searchFlightRecords(uavId, startTime, endTime) {
         if (!dt) return "";
         return dt.replace('T', ' ') + ':00';
     }
-    fetch('/api/flight/query', {
+    fetch('/record/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -70,6 +70,12 @@ type SOCUsageStatsResp {
 	DayStats   []SOCUsage `json:"dayStats"`
 }
 
+type AvgStatsResp {
+	AvgFlightTime  float64 `json:"avgFlightTime"` // 单位：秒
+	AvgBatteryUsed float64 `json:"avgBatteryUsed"` // 单位：百分比
+	AvgGS          float64 `json:"avgGS"`
+}
+
 service droneStats {
 	@handler GetFlightRecords
 	post /record/get (FlightRecordReq) returns (DroneStatsResponse)
@@ -91,5 +97,8 @@ service droneStats {
 
 	@handler SOCUsageStats
 	get /record/SOCUsage returns (SOCUsageStatsResp)
+
+	@handler AvgStats
+	get /record/avgStats returns (AvgStatsResp)
 }
 

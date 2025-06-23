@@ -3,6 +3,12 @@
 
 package types
 
+type AvgStatsResp struct {
+	AvgFlightTime  float64 `json:"avgFlightTime"`  // 单位：秒
+	AvgBatteryUsed float64 `json:"avgBatteryUsed"` // 单位：百分比
+	AvgGS          float64 `json:"avgGS"`
+}
+
 type DateCount struct {
 	Date  string `json:"date"`
 	Count int    `json:"count"`

@@ -61,12 +61,12 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 		return nil
 	}
 	fmt.Println("MySQL子表开始写入")
-	query := "INSERT INTO flight_track_points (flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc) VALUES "
+	query := "INSERT INTO flight_track_points (flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs) VALUES "
 	vals := []interface{}{}
 	for _, tp := range points {
-		query += "(?, ?, ?, ?, ?, ?, ?),"
+		query += "(?, ?, ?, ?, ?, ?, ?, ?),"
 		vals = append(vals, tp.FlightRecordID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
-			tp.Longitude, tp.Latitude, tp.Altitude, tp.SOC)
+			tp.Longitude, tp.Latitude, tp.Altitude, tp.SOC, tp.GS)
 	}
 	query = query[:len(query)-1] // 去掉最后一个逗号
 	_, err := d.DB.Exec(query, vals...)
@@ -289,6 +289,30 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 		if err := rows3.Scan(&date, &total); err == nil {
 			dayStats = append(dayStats, map[string]interface{}{"date": date, "total": total})
 		}
+	}
+	return
+}
+
+// 统计平均飞行时长（秒）、平均耗电量、平均速度
+func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64, err error) {
+	var avgTimeNull, avgSOCNull, avgGSNull sql.NullFloat64
+	row := d.DB.QueryRow(`
+        SELECT 
+            AVG(TIMESTAMPDIFF(SECOND, start_time, end_time)) as avg_time,
+            AVG(battery_used) as avg_battery,
+            (SELECT AVG(gs) FROM flight_track_points WHERE gs IS NOT NULL) as avg_gs
+        FROM flight_records
+        WHERE end_time IS NOT NULL AND battery_used IS NOT NULL
+    `)
+	err = row.Scan(&avgTimeNull, &avgSOCNull, &avgGSNull)
+	if avgTimeNull.Valid {
+		avgTime = avgTimeNull.Float64
+	}
+	if avgSOCNull.Valid {
+		avgSOC = avgSOCNull.Float64
+	}
+	if avgGSNull.Valid {
+		avgGS = avgGSNull.Float64
 	}
 	return
 }

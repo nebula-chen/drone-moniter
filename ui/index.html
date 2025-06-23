@@ -166,8 +166,20 @@
                         <p>10.0</p>
                     </div>
                 </div>
+                <div class="visual_rightCon_box">
+                    <div>
+                        <h3>平均耗电(百分比)</h3>
+                        <p>10.0</p>
+                    </div>
+                </div>
+                <div class="visual_rightCon_box">
+                    <div>
+                        <h3>平均载货量(kg)</h3>
+                        <p>10.0</p>
+                    </div>
+                </div>
             </div>
-			<div class="visual_box">
+			<!-- <div class="visual_box">
 				<div class="visual_title">
 					<span>其他</span>
 					<img src="images/ksh33.png">
@@ -175,8 +187,8 @@
 				<!-- <div class="swiper-container visual_swiper2 visual_chart">
 
 				</div> -->
-			</div>
-            <button class="bottom-jump-btn" onclick="window.location.href='http://172.25.74.79:8080/recordsui'">页面跳转</button>
+			</div> -->
+            <button class="bottom-jump-btn" onclick="window.location.href='http://192.168.1.108:8080/recordsui'">页面跳转</button>
 		</div>
 		<div class="clear"></div>
 	</div>
@@ -192,9 +204,9 @@
 					// 飞行架次
 					$('.visual_conTop_box:eq(0) p').text(res.totalCount);
 					// 航程(km)，保留两位小数
-					$('.visual_conTop_box:eq(1) p').text(res.totalDistance.toFixed(2));
+					$('.visual_conTop_box:eq(1) p').text((res.totalDistance / 1000).toFixed(2));
 					// 飞行时长(h)，totalTime单位为秒，转小时，保留两位小数
-					$('.visual_conTop_box:eq(2) p').text((res.totalTime / 60).toFixed(2));
+					$('.visual_conTop_box:eq(2) p').text((res.totalTime / 3600).toFixed(2));
 				},
 				error: function() {
 					// 失败时可选提示
