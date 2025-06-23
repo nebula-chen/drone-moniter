@@ -65,6 +65,9 @@ window.addEventListener('load', function() {
             
             // 设置轨迹显示状态 - 默认为显示
             this.showPaths = true;
+
+            // 新增：轨迹绘制模式，true为3D轨迹，false为2D轨迹
+            this.use3DPath = false;
             
             // 添加按钮事件监听
             this.initButtonControl();
@@ -75,57 +78,48 @@ window.addEventListener('load', function() {
                 this.initFlightPath3DLayer();
 
                 document.getElementById('loading').style.display = 'none';
+
+                this.showRecentTracksAnimated();
+
                 this.connectWebSocket();
             });
         }
 
         // 替换键盘控制为按钮控制
         initButtonControl() {
-            // 左旋转按钮
-            document.getElementById('rotateLeft').addEventListener('click', () => {
-                this.currentRotation -= 5;
-                this.currentRotation = ((this.currentRotation + 180) % 360) - 180;
-                this.map.setRotation(this.currentRotation);
-            });
-
-            // 右旋转按钮
-            document.getElementById('rotateRight').addEventListener('click', () => {
-                this.currentRotation += 5;
-                this.currentRotation = ((this.currentRotation + 180) % 360) - 180;
-                this.map.setRotation(this.currentRotation);
-            });
-
-            // 重置按钮
+            // 俯视图按钮
             document.getElementById('resetRotation').addEventListener('click', () => {
                 this.currentRotation = 0;
                 this.map.setRotation(this.currentRotation);
-                this.map.setPitch(0);  // 重置俯仰角
-                this.map.setZoom(15.5); // 重置缩放级别
+                this.map.setPitch(0);
+                this.map.setZoom(15.5);
+
+                // 清除所有轨迹
+                this.clearAllPaths();
+
+                // 切换轨迹绘制为2D
+                this.use3DPath = false;
+
             });
 
-            // 添加俯仰角控制
-            document.getElementById('pitchUp').addEventListener('click', () => {
-                const currentPitch = this.map.getPitch();
-                const newPitch = Math.min(currentPitch + 5, 80);  // 最大俯仰角限制在80度
-                this.map.setPitch(newPitch);
+            // 轴测图按钮
+            document.getElementById('axonometric').addEventListener('click', () => {
+                this.currentRotation = 0;
+                this.map.setRotation(this.currentRotation);
+                this.map.setPitch(45);
+                this.map.setZoom(17);
+
+                // 清除所有轨迹
+                this.clearAllPaths();
+
+                // 切换轨迹绘制为3D
+                this.use3DPath = true;
             });
 
-            document.getElementById('pitchDown').addEventListener('click', () => {
-                const currentPitch = this.map.getPitch();
-                const newPitch = Math.max(currentPitch - 5, 0);  // 最小俯仰角限制在0度
-                this.map.setPitch(newPitch);
-            });
-
-            // 添加缩放控制
-            document.getElementById('zoomIn').addEventListener('click', () => {
+            // 高度曲线图按钮
+            document.getElementById('altitudeCurve').addEventListener('click', () => {
                 const currentZoom = this.map.getZoom();
                 const newZoom = Math.min(currentZoom + 0.5, 20);  // 最大缩放级别限制在20
-                this.map.setZoom(newZoom);
-            });
-
-            document.getElementById('zoomOut').addEventListener('click', () => {
-                const currentZoom = this.map.getZoom();
-                const newZoom = Math.max(currentZoom - 0.5, 3);  // 最小缩放级别限制在3
                 this.map.setZoom(newZoom);
             });
             
@@ -387,7 +381,11 @@ window.addEventListener('load', function() {
         
         // 更新2D飞行路径
         updateFlightPath(recordId, path) {
-            // 检查是否已存在路径线
+            if (this.use3DPath) {
+                this.updateFlightPath3D(recordId, path);
+                return;
+            }
+            // 原2D绘制逻辑
             if (this.pathPolylines.has(recordId)) {
                 // 更新已有路径线
                 const polyline = this.pathPolylines.get(recordId);
@@ -444,6 +442,65 @@ window.addEventListener('load', function() {
                 const line = new THREE.Line(geometry, material);
                 this.flightPathGroup.add(line);
                 this.flightPath3DLines.set(recordId, line);
+            }
+        }
+        
+        // 新增：获取最近3条飞行记录并动画绘制轨迹
+        async showRecentTracksAnimated() {
+            try {
+                const res = await fetch('/record/recentTracks?n=3');
+                const data = await res.json();
+                if (!data.Records || data.Records.length === 0) return;
+                // 按 flightCode 分组
+                const tracksByRecord = {};
+                data.Records.forEach(pt => {
+                    const recordId = pt.flightCode;
+                    if (!tracksByRecord[recordId]) tracksByRecord[recordId] = [];
+                    // 保留原始点及flightStatus
+                    tracksByRecord[recordId].push({
+                        lng: pt.longitude / 1e7,
+                        lat: pt.latitude / 1e7,
+                        alt: pt.altitude,
+                        flightStatus: pt.flightStatus
+                    });
+                });
+                // 对每条轨迹依次动画绘制
+                const recordIds = Object.keys(tracksByRecord);
+                let idx = 0;
+                const drawNextTrack = () => {
+                    if (idx >= recordIds.length) {
+                        // 所有轨迹绘制完毕，延时清除并重新开始
+                        setTimeout(() => {
+                            this.clearAllPaths();
+                            setTimeout(() => {
+                                this.showRecentTracksAnimated();
+                            }, 500); // 清除后稍作延迟再重播
+                        }, 500); // 所有轨迹展示完后停留1.5秒
+                        return;
+                    }
+                    const points = tracksByRecord[recordIds[idx]];
+                    let path = [];
+                    let i = 0;
+                    const animate = () => {
+                        if (i < points.length) {
+                            // 如果当前点为TakeOff，重置path，避免首尾连线
+                            if (points[i].flightStatus === 'TakeOff') {
+                                path = [];
+                            }
+                            path.push([points[i].lng, points[i].lat, points[i].alt]);
+                            this.updateFlightPath(recordIds[idx], path);
+                            i++;
+                            setTimeout(animate, 80);
+                        } else {
+                            idx++;
+                            setTimeout(drawNextTrack, 500);
+                        }
+                    };
+                    animate();
+                };
+                drawNextTrack();
+            } catch (e) {
+                console.error('获取最近轨迹失败', e);
             }
         }
         
@@ -526,7 +583,7 @@ window.addEventListener('load', function() {
             }
         }
 
-        // 修改：更新或创建无人机标记（使用Three.js在3D层展示）
+        // 修改：更新或创建无人机标记（使用Three.js在3D层展示图标）
         updateOrCreateDroneMarker3D(data) {
             if (!this.droneMarkers3D) {
                 this.droneMarkers3D = new Map();

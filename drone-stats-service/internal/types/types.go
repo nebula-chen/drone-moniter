@@ -14,20 +14,6 @@ type DateCount struct {
 	Count int    `json:"count"`
 }
 
-type DroneStats struct {
-	FlightCode   string `json:"flightCode"`
-	FlightStatus string `json:"flightStatus"`
-	TimeStamp    string `json:"timeStamp"`
-	Longitude    int64  `json:"longitude"`
-	Latitude     int64  `json:"latitude"`
-	Altitude     int    `json:"altitude"`
-	SOC          int    `json:"SOC"`
-}
-
-type DroneStatsResponse struct {
-	Records []DroneStats
-}
-
 type FlightRecord struct {
 	ID          int     `json:"id"`
 	UavId       string  `json:"uav_id"`
@@ -73,6 +59,20 @@ type TimeSeriesStatsResp struct {
 	YearStats  []DateCount `json:"yearStats"`
 	MonthStats []DateCount `json:"monthStats"`
 	DayStats   []DateCount `json:"dayStats"`
+}
+
+type TrackPoints struct {
+	FlightCode   string `json:"flightCode"`
+	FlightStatus string `json:"flightStatus"`
+	TimeStamp    string `json:"timeStamp"`
+	Longitude    int64  `json:"longitude"`
+	Latitude     int64  `json:"latitude"`
+	Altitude     int    `json:"altitude"`
+	SOC          int    `json:"SOC"`
+}
+
+type TrackResponse struct {
+	Records []TrackPoints `json:trackPoints`
 }
 
 type UasStatsResp struct {

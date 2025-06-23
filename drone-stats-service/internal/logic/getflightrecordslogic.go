@@ -26,7 +26,7 @@ func NewGetFlightRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (resp *types.DroneStatsResponse, err error) {
+func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (resp *types.TrackResponse, err error) {
 	start, _ := time.Parse(time.RFC3339, req.StartTime)
 	end, _ := time.Parse(time.RFC3339, req.EndTime)
 	// 转为UTC0
@@ -37,7 +37,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		return nil, err
 	}
 	if len(records) == 0 {
-		return &types.DroneStatsResponse{}, nil
+		return &types.TrackResponse{}, nil
 	}
 
 	// 找到TakeOff和Land点，提取本次飞行架次的所有点
@@ -84,13 +84,13 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	if len(flightPoints) < 2 ||
 		getString(flightPoints[0], "flightStatus") != "TakeOff" ||
 		getString(flightPoints[len(flightPoints)-1], "flightStatus") != "Land" {
-		// return &types.DroneStatsResponse{}, nil // 无有效飞行架次
+		// return &types.TrackResponse{}, nil // 无有效飞行架次
 
 		// 仅打印到终端，不存入MySQL
 		for i, r := range records {
 			l.Logger.Infof("无效架次: index=%d, record=%+v 结束", i, r)
 		}
-		return &types.DroneStatsResponse{}, nil
+		return &types.TrackResponse{}, nil
 	}
 
 	startPoint := flightPoints[0]
@@ -129,7 +129,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	}
 	if exists {
 		l.Logger.Infof("该飞行架次已存在: uav_id=%s, start=%v, end=%v", fr.UavId, fr.StartTime, fr.EndTime)
-		return &types.DroneStatsResponse{}, nil
+		return &types.TrackResponse{}, nil
 	}
 
 	flightRecordID, err := l.svcCtx.MySQLDao.SaveFlightRecordAndGetID(fr)
@@ -159,9 +159,9 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	}
 
 	// 返回整理后的飞行轨迹（原样返回，或可转换为实际值）
-	resp = &types.DroneStatsResponse{}
+	resp = &types.TrackResponse{}
 	for _, r := range flightPoints {
-		resp.Records = append(resp.Records, types.DroneStats{
+		resp.Records = append(resp.Records, types.TrackPoints{
 			FlightCode:   req.FlightCode,
 			FlightStatus: getString(r, "flightStatus"),
 			TimeStamp:    r["_time"].(time.Time).Format(time.RFC3339),
