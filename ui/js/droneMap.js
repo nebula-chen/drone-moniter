@@ -116,12 +116,12 @@ window.addEventListener('load', function() {
                 this.use3DPath = true;
             });
 
-            // 高度曲线图按钮
-            document.getElementById('altitudeCurve').addEventListener('click', () => {
-                const currentZoom = this.map.getZoom();
-                const newZoom = Math.min(currentZoom + 0.5, 20);  // 最大缩放级别限制在20
-                this.map.setZoom(newZoom);
-            });
+            // // 高度曲线图按钮
+            // document.getElementById('altitudeCurve').addEventListener('click', () => {
+            //     const currentZoom = this.map.getZoom();
+            //     const newZoom = Math.min(currentZoom + 0.5, 20);  // 最大缩放级别限制在20
+            //     this.map.setZoom(newZoom);
+            // });
             
             // 添加飞行路径显示/隐藏控制
             const togglePathsBtn = document.getElementById('togglePaths');
@@ -348,7 +348,8 @@ window.addEventListener('load', function() {
                     path.push(newPoint);
                     this.flightPaths.set(data.flightCode, path);
                     
-                    this.updateFlightPath(data.flightCode, path);   // 更新2D路径
+                    const color = this.getColorByRecordId(recordId);
+                    this.updateFlightPath(data.flightCode, path, color);   // 更新2D路径
                     // this.updateFlightPath3D(data.flightCode, path);   // 更新3D路径
                 }
             }
@@ -380,7 +381,7 @@ window.addEventListener('load', function() {
         };
         
         // 更新2D飞行路径
-        updateFlightPath(recordId, path) {
+        updateFlightPath(recordId, path, color) {
             if (this.use3DPath) {
                 this.updateFlightPath3D(recordId, path);
                 return;
@@ -392,7 +393,7 @@ window.addEventListener('load', function() {
                 polyline.setPath(path);
             } else {
                 // 创建新的路径线
-                const color = this.getColorByRecordId(recordId);
+                
                 const polyline = new AMap.Polyline({
                     path: path,
                     strokeColor: color,
@@ -475,7 +476,7 @@ window.addEventListener('load', function() {
                             setTimeout(() => {
                                 this.showRecentTracksAnimated();
                             }, 500); // 清除后稍作延迟再重播
-                        }, 500); // 所有轨迹展示完后停留1.5秒
+                        }, 1000); // 所有轨迹展示完后停留1.5秒
                         return;
                     }
                     const points = tracksByRecord[recordIds[idx]];
@@ -488,12 +489,13 @@ window.addEventListener('load', function() {
                                 path = [];
                             }
                             path.push([points[i].lng, points[i].lat, points[i].alt]);
-                            this.updateFlightPath(recordIds[idx], path);
+                            const color = this.getColorByRecordId(recordIds[idx]);
+                            this.updateFlightPath(recordIds[idx], path, color);
                             i++;
-                            setTimeout(animate, 80);
+                            setTimeout(animate, 1000);
                         } else {
                             idx++;
-                            setTimeout(drawNextTrack, 500);
+                            setTimeout(drawNextTrack, 2000);
                         }
                     };
                     animate();
