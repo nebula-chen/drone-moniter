@@ -90,7 +90,7 @@ html, body, form{overflow-y:auto;height:100%;}
 .visual_right{width:18%;height:100%;float:right;}
 .visual_con .visual_conTop .visual_conTop_box>div{height:100%;}
 .visual_con .visual_conTop .visual_conTop_box>div h3{color:#fff;font-size:16px;padding:16px 0 0 20px;}
-.visual_con .visual_conTop .visual_conTop_box>div p{width:33%;float:left;line-height:85px;color:#20dbfd;text-shadow:0 0 25px #00d8ff;font-size:46px;font-family: 'yjsz';text-align:right;}
+.visual_con .visual_conTop .visual_conTop_box>div p{width:33%;line-height:85px;color:#20dbfd;text-shadow:0 0 25px #00d8ff;font-size:46px;font-family: 'yjsz';text-align:right;margin: 0 auto;display: block;}
 .visual_con .visual_conTop .visual_conTop_box>div .conTop_smil{width:67%;height:60px;float:left;padding-top:23px;}
 .visual_con .visual_conTop .visual_conTop_box>div .conTop_smil a{display:block;line-height:20px;text-align: left;color:#fff;padding-left:9px;}
 .visual_con .visual_conTop .visual_conTop_box>div .conTop_smil span{width:32px;display:inline-block;margin-left:3px;}
@@ -276,12 +276,12 @@ html, body, form{overflow-y:auto;height:100%;}
 /* 控制面板样式 */
 #main8 .control-panel {
     position: absolute;
-    bottom: 20px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(16, 54, 87, 0.64);
-    padding: 6px 8px;
-    border-radius: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
     box-shadow: 0 4px 20px rgba(19, 128, 189, 0.12);
     z-index: 10;
     display: flex;
@@ -291,19 +291,19 @@ html, body, form{overflow-y:auto;height:100%;}
 }
 #main8 .control-group {
     display: flex;
-    gap: 4px;
+    gap: 6px;
 }
 #main8 .control-btn {
-    padding: 4px 8px;
+    padding: 8px 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     background: #1380bd;
     color: #fff;
     cursor: pointer;
-    font-size: 4px;
+    font-size: 18px;
     font-weight: 500;
     transition: all 0.3s ease;
-    min-width: 60px;
+    min-width: 88px;
     border: 1px solid #20dbfd;
 }
 #main8 .control-btn:hover {
