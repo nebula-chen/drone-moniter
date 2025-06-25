@@ -67,7 +67,7 @@ func RecentTracksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			}
 		}
 		resp := types.TrackResponse{
-			Records: allPoints,
+			Track: allPoints,
 		}
 		httpx.OkJson(w, resp)
 	}

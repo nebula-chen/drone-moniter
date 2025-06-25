@@ -161,7 +161,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	// 返回整理后的飞行轨迹（原样返回，或可转换为实际值）
 	resp = &types.TrackResponse{}
 	for _, r := range flightPoints {
-		resp.Records = append(resp.Records, types.TrackPoints{
+		resp.Track = append(resp.Track, types.TrackPoints{
 			FlightCode:   req.FlightCode,
 			FlightStatus: getString(r, "flightStatus"),
 			TimeStamp:    r["_time"].(time.Time).Format(time.RFC3339),
