@@ -13,6 +13,7 @@ type TrackPoints {
 	Latitude     int64  `json:"latitude"`
 	Altitude     int    `json:"altitude"`
 	SOC          int    `json:"SOC"`
+	GS           int    `json:"GS"`
 }
 
 type TrackResponse {
@@ -70,6 +71,17 @@ type SOCUsageStatsResp {
 	DayStats   []SOCUsage `json:"dayStats"`
 }
 
+type PayloadStats {
+	Date    string  `json:"date"`
+	Payload float64 `json:"payload"`
+}
+
+type PayloadStatsResp {
+	YearStats  []PayloadStats `json:"yearStats"`
+	MonthStats []PayloadStats `json:"monthStats"`
+	DayStats   []PayloadStats `json:"dayStats"`
+}
+
 type AvgStatsResp {
 	AvgFlightTime  float64 `json:"avgFlightTime"` // 单位：秒
 	AvgBatteryUsed float64 `json:"avgBatteryUsed"` // 单位：百分比
@@ -97,6 +109,9 @@ service droneStats {
 
 	@handler SOCUsageStats
 	get /record/SOCUsage returns (SOCUsageStatsResp)
+
+	@handler PayloadStats
+	get /record/payloadStats returns (PayloadStatsResp)
 
 	@handler AvgStats
 	get /record/avgStats returns (AvgStatsResp)

@@ -38,6 +38,17 @@ type FlightRecordsResponse struct {
 	Flightrecords []FlightRecord `json:"flightRecords"`
 }
 
+type PayloadStats struct {
+	Date    string  `json:"date"`
+	Payload float64 `json:"payload"`
+}
+
+type PayloadStatsResp struct {
+	YearStats  []PayloadStats `json:"yearStats"`
+	MonthStats []PayloadStats `json:"monthStats"`
+	DayStats   []PayloadStats `json:"dayStats"`
+}
+
 type RecordsStatsResp struct {
 	TotalCount    int     `json:"totalCount"`
 	TotalDistance float64 `json:"totalDistance"`
@@ -69,6 +80,7 @@ type TrackPoints struct {
 	Latitude     int64  `json:"latitude"`
 	Altitude     int    `json:"altitude"`
 	SOC          int    `json:"SOC"`
+	GS           int    `json:"GS"`
 }
 
 type TrackResponse struct {
