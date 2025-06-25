@@ -480,6 +480,7 @@ window.addEventListener('load', function() {
                         return;
                     }
                     const points = tracksByRecord[recordIds[idx]];
+                    const color = this.getColorByRecordId(recordIds[idx]);
                     let path = [];
                     let i = 0;
                     const animate = () => {
@@ -489,7 +490,6 @@ window.addEventListener('load', function() {
                                 path = [];
                             }
                             path.push([points[i].lng, points[i].lat, points[i].alt]);
-                            const color = this.getColorByRecordId(recordIds[idx]);
                             this.updateFlightPath(recordIds[idx], path, color);
                             i++;
                             setTimeout(animate, 1000);

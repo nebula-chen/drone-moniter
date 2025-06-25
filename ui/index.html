@@ -293,13 +293,13 @@
 			let yAxis = [];
 			if (type === 'year') {
 				xAxis = (stats.yearStats || []).map(item => item.date);
-				yAxis = (stats.yearStats || []).map(item => item.usage);
+				yAxis = (stats.yearStats || []).map(item => item.usage.toFixed(2));
 			} else if (type === 'month') {
 				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.monthStats || []).map(item => item.usage);
+				yAxis = (stats.monthStats || []).map(item => item.usage.toFixed(2));
 			} else {
 				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.dayStats || []).map(item => item.usage);
+				yAxis = (stats.dayStats || []).map(item => item.usage.toFixed(2));
 			}
 			myChartSOC.setOption({
 				xAxis: { data: xAxis },

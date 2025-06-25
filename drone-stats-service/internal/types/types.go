@@ -45,8 +45,8 @@ type RecordsStatsResp struct {
 }
 
 type SOCUsage struct {
-	Date  string `json:"date"`
-	Usage int    `json:"usage"`
+	Date  string  `json:"date"`
+	Usage float64 `json:"usage"`
 }
 
 type SOCUsageStatsResp struct {
@@ -72,7 +72,7 @@ type TrackPoints struct {
 }
 
 type TrackResponse struct {
-	Records []TrackPoints `json:trackPoints`
+	Track []TrackPoints `json:track`
 }
 
 type UasStatsResp struct {

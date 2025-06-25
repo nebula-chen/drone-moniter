@@ -32,19 +32,19 @@ func (l *SOCUsageStatsLogic) SOCUsageStats() (resp *types.SOCUsageStatsResp, err
 	for _, y := range yearStats {
 		resp.YearStats = append(resp.YearStats, types.SOCUsage{
 			Date:  y["date"].(string),
-			Usage: y["total"].(int),
+			Usage: y["total"].(float64),
 		})
 	}
 	for _, m := range monthStats {
 		resp.MonthStats = append(resp.MonthStats, types.SOCUsage{
 			Date:  m["date"].(string),
-			Usage: m["total"].(int),
+			Usage: m["total"].(float64),
 		})
 	}
 	for _, d := range dayStats {
 		resp.DayStats = append(resp.DayStats, types.SOCUsage{
 			Date:  d["date"].(string),
-			Usage: d["total"].(int),
+			Usage: d["total"].(float64),
 		})
 	}
 	return

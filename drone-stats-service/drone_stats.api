@@ -16,7 +16,7 @@ type TrackPoints {
 }
 
 type TrackResponse {
-	records []TrackPoints `json:trackPoints`
+	Track []TrackPoints `json:track`
 }
 
 type FlightRecord {
@@ -60,8 +60,8 @@ type TimeSeriesStatsResp {
 }
 
 type SOCUsage {
-	Date  string `json:"date"`
-	Usage int    `json:"usage"`
+	Date  string  `json:"date"`
+	Usage float64 `json:"usage"`
 }
 
 type SOCUsageStatsResp {

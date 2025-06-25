@@ -247,45 +247,66 @@ func (d *MySQLDao) GetFlightRecordsStats() (yearStats, monthStats, dayStats []ma
 	return
 }
 
-// 按年、月、日统计飞行耗电量
+// 按年、月、日统计单位距离单位载重耗电量（distance或payload为0时按1处理）
 func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
 	// 年统计
-	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	rows, err := d.DB.Query(`
+        SELECT DATE_FORMAT(start_time, '%Y') as date, 
+        SUM(battery_used / 
+            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+        ) as total 
+        FROM flight_records 
+        GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var date string
-		var total int
+		var total float64
 		if err := rows.Scan(&date, &total); err == nil {
 			yearStats = append(yearStats, map[string]interface{}{"date": date, "total": total})
 		}
 	}
 
 	// 月统计
-	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	rows2, err := d.DB.Query(`
+        SELECT DATE_FORMAT(start_time, '%Y-%m') as date, 
+        SUM(battery_used / 
+            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+        ) as total 
+        FROM flight_records 
+        GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
 	defer rows2.Close()
 	for rows2.Next() {
 		var date string
-		var total int
+		var total float64
 		if err := rows2.Scan(&date, &total); err == nil {
 			monthStats = append(monthStats, map[string]interface{}{"date": date, "total": total})
 		}
 	}
 
 	// 日统计
-	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, SUM(battery_used) as total FROM flight_records GROUP BY date ORDER BY date`)
+	rows3, err := d.DB.Query(`
+        SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, 
+        SUM(battery_used / 
+            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+        ) as total 
+        FROM flight_records 
+        GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
 	defer rows3.Close()
 	for rows3.Next() {
 		var date string
-		var total int
+		var total float64
 		if err := rows3.Scan(&date, &total); err == nil {
 			dayStats = append(dayStats, map[string]interface{}{"date": date, "total": total})
 		}
