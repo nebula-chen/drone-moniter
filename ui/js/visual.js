@@ -8,23 +8,23 @@ option1 = {
         subtext: '',
         link: ''
     },
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'none' },
-        formatter: function(params) {
-            var time = '';
-            var str = '';
-            for (var i of params) {
-                time = i.name.replace(/\n/g, '') + '<br/>';
-                if (i.data == 'null' || i.data == null) {
-                    str += i.seriesName + '：无数据' + '<br/>'
-                } else {
-                    str += i.seriesName + '：' + i.data + '<br/>'
-                }
-            }
-            return time + str;
-        }
-    },
+    // tooltip: {
+    //     trigger: 'axis',
+    //     axisPointer: { type: 'none' },
+    //     formatter: function(params) {
+    //         var time = '';
+    //         var str = '';
+    //         for (var i of params) {
+    //             time = i.name.replace(/\n/g, '') + '<br/>';
+    //             if (i.data == 'null' || i.data == null) {
+    //                 str += i.seriesName + '：无数据' + '<br/>'
+    //             } else {
+    //                 str += i.seriesName + '：' + i.data + '<br/>'
+    //             }
+    //         }
+    //         return time + str;
+    //     }
+    // },
     legend: {
         right: 10,
         top: 0,
@@ -128,15 +128,15 @@ option1 = {
         barWidth: 12,
         label: {
             normal: {
-                show: false,
+                show: true,
                 formatter: '{c}',
                 position: 'top',
                 textStyle: {
-                    color: '#000',
+                    color: '#fff',
                     fontStyle: 'normal',
                     fontFamily: '微软雅黑',
-                    textAlign: 'left',
-                    fontSize: 11,
+                    textAlign: 'center',
+                    fontSize: 14,
                 },
             },
         },

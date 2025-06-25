@@ -56,7 +56,7 @@ html, body, form{overflow-y:auto;height:100%;}
 
 .visual{height:calc(100% - 33px);padding-top:10px;}
 
-.visual_box{height:33.3%;}
+.visual_box{height:32%;gap: 6px;}
 .visual_box .visual_title{position:relative;height:35px;margin:5px 0;}
 .visual_box .visual_title span{color:#fff;font-size:18px;line-height:35px;}
 .visual_box .visual_title img{width:100%;position:absolute;left:0;bottom:0;}

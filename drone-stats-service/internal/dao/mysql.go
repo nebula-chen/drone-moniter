@@ -314,6 +314,52 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 	return
 }
 
+// 按年、月、日统计运输货量
+func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
+	// 年统计
+	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var date string
+		var payload float64
+		if err := rows.Scan(&date, &payload); err == nil {
+			yearStats = append(yearStats, map[string]interface{}{"date": date, "payload": payload})
+		}
+	}
+
+	// 月统计
+	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var date string
+		var payload float64
+		if err := rows2.Scan(&date, &payload); err == nil {
+			monthStats = append(monthStats, map[string]interface{}{"date": date, "payload": payload})
+		}
+	}
+
+	// 日统计
+	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var date string
+		var payload float64
+		if err := rows3.Scan(&date, &payload); err == nil {
+			dayStats = append(dayStats, map[string]interface{}{"date": date, "payload": payload})
+		}
+	}
+	return
+}
+
 // 统计平均飞行时长（秒）、平均耗电量、平均速度
 func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64, err error) {
 	var avgTimeNull, avgSOCNull, avgGSNull sql.NullFloat64

@@ -148,6 +148,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 			Latitude:       float64(getInt64(r, "latitude")),
 			Altitude:       float64(getInt64(r, "altitude")) / 10,
 			SOC:            int(getInt64(r, "SOC")),
+			GS:             float64(getInt64(r, "GS")),
 		}
 		trackPoints = append(trackPoints, point)
 	}
@@ -169,6 +170,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 			Latitude:     getInt64(r, "latitude"),
 			Altitude:     int(getInt64(r, "altitude")),
 			SOC:          int(getInt64(r, "SOC")),
+			GS:           int(getInt64(r, "GS")),
 		})
 	}
 	return

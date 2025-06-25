@@ -46,9 +46,9 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="visual_chart_switch">
-					<button id="btn-year">年</button>
-					<button id="btn-month">月</button>
-					<button id="btn-day" class="active">日</button>
+					<button id="btn-year">年架次</button>
+					<button id="btn-month">月架次</button>
+					<button id="btn-day" class="active">日架次</button>
 				</div>
 				<div class="visual_chart" id="main1"></div>
 			</div>
@@ -58,17 +58,23 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="visual_chart_switch">
-					<button id="btn-year-soc">年</button>
-					<button id="btn-month-soc">月</button>
-					<button id="btn-day-soc" class="active">日</button>
+					<button id="btn-year-soc">年耗电</button>
+					<button id="btn-month-soc">月耗电</button>
+					<button id="btn-day-soc" class="active">日耗电</button>
 				</div>
 				<div class="visual_chart" id="main_soc"></div>
 			</div>
 			<div class="visual_box">
 				<div class="visual_title">
-					<span>xxx统计</span>
+					<span>运输货量统计</span>
 					<img src="images/ksh33.png">
 				</div>
+				<div class="visual_chart_switch">
+					<button id="btn-year-payload">年货量</button>
+					<button id="btn-month-payload">月货量</button>
+					<button id="btn-day-payload" class="active">日货量</button>
+				</div>
+				<div class="visual_chart" id="main_payload"></div>
 			</div>
 		</div>
 		<div class="visual_con">
@@ -281,6 +287,61 @@
 			if (cachedStats) updateFlightChart('day', cachedStats);
 		});
 
+		// ================== 运输货量统计 ================== //
+		var optionPayload = JSON.parse(JSON.stringify(option1));
+		optionPayload.series[0].name = '载货量';
+		optionPayload.title.text = '';
+		optionPayload.series[0].data = [];
+		optionPayload.xAxis.data = [];
+
+		function updatePayloadChart(type, stats) {
+			let xAxis = [];
+			let yAxis = [];
+			if (type === 'year') {
+				xAxis = (stats.yearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || []).map(item => item.payload.toFixed(2));
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.monthStats || []).map(item => item.payload.toFixed(2));
+			} else {
+				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.dayStats || []).map(item => item.payload.toFixed(2));
+			}
+			myChartPayload.setOption({
+				xAxis: { data: xAxis },
+				series: [{ name: '载货量', data: yAxis }]
+			});
+		}
+
+		let cachedPayloadStats = null;
+		function loadPayloadStats(type = 'day') {
+			$.ajax({
+				url: "/record/payloadStats",
+				type: "GET",
+				success: function(res) {
+					cachedPayloadStats = res;
+					updatePayloadChart(type, res);
+				}
+			});
+		}
+
+		// 飞行耗电统计按钮
+		$('#btn-year-payload').click(function() {
+			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
+			$(this).addClass('active');
+			if (cachedPayloadStats) updatePayloadChart('year', cachedPayloadStats);
+		});
+		$('#btn-month-payload').click(function() {
+			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
+			$(this).addClass('active');
+			if (cachedPayloadStats) updatePayloadChart('month', cachedPayloadStats);
+		});
+		$('#btn-day-payload').click(function() {
+			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
+			$(this).addClass('active');
+			if (cachedPayloadStats) updatePayloadChart('day', cachedPayloadStats);
+		});
+
 		// ================== 飞行耗电统计 ================== //
 		var optionSOC = JSON.parse(JSON.stringify(option1));
 		optionSOC.series[0].name = '耗电量';
@@ -389,21 +450,26 @@
 			loadOnlineCount(); // 加载当前架次
 			loadRecordsTimeSeries(); // 默认加载日统计
 			loadSOCUsageStats(); // 默认加载日统计
+			loadPayloadStats(); // 默认加载日统计
 			loadAvgStats(); // 加载平均统计
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadOnlineCount, 10 * 1000); // 每10秒刷新一次在线架次
 			setInterval(loadRecordsTimeSeries, 2 * 3600 * 1000); // 每2小时刷新一次
 			setInterval(loadSOCUsageStats, 2 * 3600 * 1000); // 每2小时刷新一次
+			setInterval(loadPayloadStats, 2 * 3600 * 1000); // 每2小时刷新一次
 			setInterval(loadAvgStats, 2 * 3600 * 1000); // 每2小时刷新一次
 		})
 
-		//交通流量
+		// 飞行架次统计图表配置
 		var myChart1 = echarts.init(document.getElementById('main1'));
 		myChart1.setOption(option1);
-		//本月发生事件
+		// 飞行耗电统计图表配置
 		var myChartSOC = echarts.init(document.getElementById('main_soc'));
 		myChartSOC.setOption(optionSOC);
+		// 运输货量统计图表配置
+		var myChartPayload = echarts.init(document.getElementById('main_payload'));
+		myChartPayload.setOption(optionPayload);
 
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		myChart3.setOption(option3);

@@ -35,6 +35,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: GetFlightRecordsHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/record/payloadStats",
+				Handler: PayloadStatsHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/record/query",
 				Handler: QueryFlightRecordsHandler(serverCtx),
