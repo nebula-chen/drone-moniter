@@ -63,6 +63,7 @@ func RecentTracksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 					Latitude:     pt["latitude"].(int64),
 					Altitude:     pt["altitude"].(int),
 					SOC:          pt["SOC"].(int),
+					GS:           pt["GS"].(int),
 				})
 			}
 		}

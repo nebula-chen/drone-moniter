@@ -49,6 +49,7 @@
 					<button id="btn-year">年架次</button>
 					<button id="btn-month">月架次</button>
 					<button id="btn-day" class="active">日架次</button>
+					<span class="total-count" id="total-count-flight" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
 				</div>
 				<div class="visual_chart" id="main1"></div>
 			</div>
@@ -61,6 +62,7 @@
 					<button id="btn-year-soc">年耗电</button>
 					<button id="btn-month-soc">月耗电</button>
 					<button id="btn-day-soc" class="active">日耗电</button>
+					<span class="total-count" id="total-count-soc" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
 				</div>
 				<div class="visual_chart" id="main_soc"></div>
 			</div>
@@ -73,6 +75,7 @@
 					<button id="btn-year-payload">年货量</button>
 					<button id="btn-month-payload">月货量</button>
 					<button id="btn-day-payload" class="active">日货量</button>
+					<span class="total-count" id="total-count-payload" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
 				</div>
 				<div class="visual_chart" id="main_payload"></div>
 			</div>
@@ -137,12 +140,12 @@
 						<div class="control-group">
 							<button class="control-btn" id="axonometric">轨迹投影</button>
 						</div>
-						<!-- <div class="control-group">
-							<button class="control-btn" id="altitudeCurve">高度曲线</button>
-						</div> -->
 						<div class="control-group">
-							<button class="control-btn toggle active" id="togglePaths">隐藏轨迹</button>
+							<button class="control-btn" id="altitudeCurve">高度曲线</button>
 						</div>
+						<!-- <div class="control-group">
+							<button class="control-btn toggle active" id="togglePaths">隐藏轨迹</button>
+						</div> -->
 					</div>
 				</div>
 			</div>
@@ -181,16 +184,14 @@
                     </div>
                 </div>
             </div>
-			<!-- <div class="visual_box">
+			<div class="visual_box record_box">
 				<div class="visual_title">
-					<span>其他</span>
+					<span>飞行记录</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="swiper-container visual_swiper2 visual_chart">
-
-				</div>
-			</div> -->
-            <button class="bottom-jump-btn" onclick="window.location.href='http://192.168.1.108:8080/recordsui'">页面跳转</button>
+				<div id="flight-records-list"></div>
+				<div id="flight-records-pagination"></div>
+			</div>
 		</div>
 		<div class="clear"></div>
 	</div>
@@ -238,12 +239,15 @@
 		function updateFlightChart(type, stats) {
 			let xAxis = [];
 			let yAxis = [];
+			let total = 0;
 			if (type === 'year') {
 				xAxis = (stats.yearStats || []).map(item => item.date);
 				yAxis = (stats.yearStats || []).map(item => item.count);
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else if (type === 'month') {
 				xAxis = (stats.monthStats || []).map(item => item.date.slice(5)); // 取 MM 部分
 				yAxis = (stats.monthStats || []).map(item => item.count);
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else {
 				xAxis = (stats.dayStats || []).map(item => item.date.slice(5)); // 取 MM-DD 部分
 				yAxis = (stats.dayStats || []).map(item => item.count);
@@ -256,6 +260,11 @@
 				xAxis: { data: xAxis },
 				series: [{ data: yAxis }]
 			});
+			if (type == 'month' || type == 'year') {
+				$('#total-count-flight').text('总数：' + total).show();
+			} else {
+				$('#total-count-flight').hide();
+			}
 		}
 
 		let cachedStats = null;
@@ -297,12 +306,15 @@
 		function updatePayloadChart(type, stats) {
 			let xAxis = [];
 			let yAxis = [];
+			let total = 0;
 			if (type === 'year') {
 				xAxis = (stats.yearStats || []).map(item => item.date);
 				yAxis = (stats.yearStats || []).map(item => item.payload.toFixed(2));
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else if (type === 'month') {
 				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
 				yAxis = (stats.monthStats || []).map(item => item.payload.toFixed(2));
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else {
 				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
 				yAxis = (stats.dayStats || []).map(item => item.payload.toFixed(2));
@@ -311,6 +323,11 @@
 				xAxis: { data: xAxis },
 				series: [{ name: '载货量', data: yAxis }]
 			});
+			if (type == 'month' || type == 'year') {
+				$('#total-count-payload').text('总数：' + total).show();
+			} else {
+				$('#total-count-payload').hide();
+			}
 		}
 
 		let cachedPayloadStats = null;
@@ -352,12 +369,15 @@
 		function updateSOCChart(type, stats) {
 			let xAxis = [];
 			let yAxis = [];
+			let total = 0;
 			if (type === 'year') {
 				xAxis = (stats.yearStats || []).map(item => item.date);
 				yAxis = (stats.yearStats || []).map(item => item.usage.toFixed(2));
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else if (type === 'month') {
 				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
 				yAxis = (stats.monthStats || []).map(item => item.usage.toFixed(2));
+				total = yAxis.reduce((a, b) => a + b, 0);
 			} else {
 				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
 				yAxis = (stats.dayStats || []).map(item => item.usage.toFixed(2));
@@ -366,6 +386,11 @@
 				xAxis: { data: xAxis },
 				series: [{ name: '耗电量', data: yAxis }]
 			});
+			if (type == 'month' || type == 'year') {
+				$('#total-count-soc').text('总数：' + total).show();
+			} else {
+				$('#total-count-soc').hide();
+			}
 		}
 
 		let cachedSOCStats = null;
@@ -420,6 +445,97 @@
 				}
 			});
 		}
+		
+		// ================== 飞行记录 ================== //
+		// 前端分页参数
+		let allFlightRecords = [];
+		let flightRecordsPage = 1;
+		let flightRecordsPageSize = 3;
+
+		// 渲染飞行记录列表（info-panel样式，倒序，前端分页）
+		function renderFlightRecords(records) {
+			const $list = $('#flight-records-list');
+			$list.empty();
+			if (!records || records.length === 0) {
+				$list.append('<div class="record-panel no-selection">暂无飞行记录</div>');
+				$('#flight-records-pagination').empty();
+				return;
+			}
+			// 倒序
+			const reversed = records.slice().reverse();
+			// 分页
+			const startIdx = (flightRecordsPage - 1) * flightRecordsPageSize;
+			const endIdx = startIdx + flightRecordsPageSize;
+			const pageData = reversed.slice(startIdx, endIdx);
+
+			pageData.forEach(function(rec) {
+				const html = `
+				<div class="record-panel" data-id="${rec.ID || rec.id}">
+					<p>编号: <span>${rec.UavId || rec.uav_id}</span></p>
+					<p>开始时间: <span>${rec.StartTime || rec.start_time}</span></p>
+				</div>`;
+				$list.append(html);
+			});
+			// 预留点击事件
+			$list.find('.record-panel').click(function() {
+				const id = $(this).data('id');
+				// TODO: 展示详情或弹窗
+				// alert('点击记录ID: ' + id);
+			});
+
+			renderFlightRecordsPagination(records.length);
+		}
+
+		// 渲染分页控件（前端分页）
+		function renderFlightRecordsPagination(total) {
+			const $pg = $('#flight-records-pagination');
+			$pg.empty();
+			if (!total || total <= flightRecordsPageSize) return;
+			const totalPages = Math.ceil(total / flightRecordsPageSize);
+			let html = '';
+			html += `<button ${flightRecordsPage === 1 ? 'disabled' : ''} id="flight-records-prev">上一页</button>`;
+			html += ` <span style="color: #fff;">第 ${flightRecordsPage} / ${totalPages} 页</span> `;
+			html += `<button ${flightRecordsPage === totalPages ? 'disabled' : ''} id="flight-records-next">下一页</button>`;
+			$pg.html(html);
+
+			$('#flight-records-prev').click(function(){
+				if(flightRecordsPage > 1){
+					flightRecordsPage--;
+					renderFlightRecords(allFlightRecords);
+				}
+			});
+			$('#flight-records-next').click(function(){
+				if(flightRecordsPage < totalPages){
+					flightRecordsPage++;
+					renderFlightRecords(allFlightRecords);
+				}
+			});
+		}
+
+		// 查询飞行记录（一次性拉取全部，前端分页）
+		function loadFlightRecords() {
+			$.ajax({
+				url: "/record/query",
+				type: "POST",
+				headers: { 'Content-Type': 'application/json' },
+				data: JSON.stringify({
+					flightCode: "",
+					startTime: "",
+					endTime: ""
+				}),
+				success: function(res) {
+					// 兼容不同字段名
+					let records = res.flightrecords || res.flightRecords || [];
+					allFlightRecords = records;
+					flightRecordsPage = 1; // 每次查询重置到第一页
+					renderFlightRecords(allFlightRecords);
+				},
+				error: function() {
+					allFlightRecords = [];
+					renderFlightRecords([]);
+				}
+			});
+		}
 
 		// ================== 页面载入 ================== //
 		$(function(){
@@ -452,6 +568,7 @@
 			loadSOCUsageStats(); // 默认加载日统计
 			loadPayloadStats(); // 默认加载日统计
 			loadAvgStats(); // 加载平均统计
+			loadFlightRecords(); // 加载飞行记录
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadOnlineCount, 10 * 1000); // 每10秒刷新一次在线架次
@@ -459,6 +576,7 @@
 			setInterval(loadSOCUsageStats, 2 * 3600 * 1000); // 每2小时刷新一次
 			setInterval(loadPayloadStats, 2 * 3600 * 1000); // 每2小时刷新一次
 			setInterval(loadAvgStats, 2 * 3600 * 1000); // 每2小时刷新一次
+			setInterval(loadFlightRecords, 2 * 60 * 1000); // 每2小时刷新一次
 		})
 
 		// 飞行架次统计图表配置
