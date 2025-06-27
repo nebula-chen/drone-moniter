@@ -81,10 +81,12 @@ type TrackPoints struct {
 	Altitude     int    `json:"altitude"`
 	SOC          int    `json:"SOC"`
 	GS           int    `json:"GS"`
+	WindSpeed    int    `json:"windSpeed"`  // 新增
+	WindDirect   int    `json:"windDirect"` // 新增
 }
 
 type TrackResponse struct {
-	Track []TrackPoints `json:track`
+	Track []TrackPoints `json:"track"`
 }
 
 type UasStatsResp struct {

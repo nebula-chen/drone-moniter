@@ -80,6 +80,17 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		}
 		return ""
 	} // 获取string类型的值
+	getFloat64 := func(m map[string]interface{}, key string) float64 {
+		if v, ok := m[key]; ok && v != nil {
+			switch val := v.(type) {
+			case float64:
+				return val
+			case int64:
+				return float64(val)
+			}
+		}
+		return 0
+	} // 获取float64类型的值，支持int64转换
 
 	if len(flightPoints) < 2 ||
 		getString(flightPoints[0], "flightStatus") != "TakeOff" ||
@@ -120,6 +131,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		EndLng:      getInt64(endPoint, "longitude"),
 		Distance:    totalDistance,
 		BatteryUsed: int(startSOC - endSOC),
+		Payload:     getFloat64(endPoint, "payload"), // 新增
 	}
 
 	// 新增：插入前判断是否已存在
@@ -149,6 +161,8 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 			Altitude:       float64(getInt64(r, "altitude")) / 10,
 			SOC:            int(getInt64(r, "SOC")),
 			GS:             float64(getInt64(r, "GS")),
+			WindSpeed:      int(getInt64(r, "windSpeed")),  // 新增
+			WindDirect:     int(getInt64(r, "windDirect")), // 新增
 		}
 		trackPoints = append(trackPoints, point)
 	}
