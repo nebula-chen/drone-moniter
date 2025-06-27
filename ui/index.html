@@ -133,19 +133,16 @@
 							<p>电池电量: <span id="soc">-</span></p>
 						</div>
 					</div>
+					<!-- 新增高度曲线图容器，初始隐藏 -->
+					<div id="altitude-curve-chart" style="display:none;">
+						<div id="altitude-curve-echart"></div>
+					</div>
 					<div class="control-panel">
 						<div class="control-group">
 							<button class="control-btn" id="resetRotation">平面俯视</button>
-						</div>
-						<div class="control-group">
 							<button class="control-btn" id="axonometric">轨迹投影</button>
-						</div>
-						<div class="control-group">
 							<button class="control-btn" id="altitudeCurve">高度曲线</button>
 						</div>
-						<!-- <div class="control-group">
-							<button class="control-btn toggle active" id="togglePaths">隐藏轨迹</button>
-						</div> -->
 					</div>
 				</div>
 			</div>
@@ -598,6 +595,95 @@
 				delay: 5000,//5秒切换一次
 			},
 		})
+	</script>
+	<script type="text/javascript">
+		// ========== 高度曲线功能 ==========
+		$('#altitudeCurve').click(function() {
+			// 显示曲线容器
+			$('#altitude-curve-chart').fadeIn(200);
+			// 拉取最近一条轨迹
+			$.get('/record/recentTracks?n=1', function(res) {
+				if (!res || !res.Track || res.Track.length === 0) {
+					showAltitudeCurve([], []);
+					return;
+				}
+				// 轨迹点按时间排序
+				let points = res.Track;
+				// 计算累计距离
+				let distArr = [0];
+				let altArr = [];
+				for (let i = 0; i < points.length; i++) {
+					let pt = points[i];
+					altArr.push(pt.Altitude || pt.altitude || 0);
+					if (i > 0) {
+						let prev = points[i-1];
+						let d = calcDistance(
+							prev.Longitude || prev.longitude,
+							prev.Latitude || prev.latitude,
+							pt.Longitude || pt.longitude,
+							pt.Latitude || pt.latitude
+						);
+						distArr.push(distArr[distArr.length-1] + d);
+					}
+				}
+				// 单位转为km，保留两位小数
+				let distArrKm = distArr.map(d => d.toFixed(2));
+				showAltitudeCurve(distArrKm, altArr);
+			});
+		});
+
+		// 平面俯视、轨迹投影按钮点击时自动关闭高度曲线
+		$('#resetRotation, #axonometric').click(function(){
+			$('#altitude-curve-chart').fadeOut(200);
+		});
+
+		// 绘制曲线
+		function showAltitudeCurve(xArr, yArr) {
+			let chartDom = document.getElementById('altitude-curve-echart');
+			let myChart = echarts.init(chartDom);
+			let option = {
+				title: { text: '飞行高度曲线', left: 'center', textStyle: { color: '#fff' } },
+				tooltip: { trigger: 'axis' },
+				xAxis: {
+					type: 'category',
+					name: '飞行距离(m)',
+					data: xArr,
+					axisLabel: { color: '#fff' },
+					nameTextStyle: { color: '#fff' },
+					axisLine: { lineStyle: { color: '#fff' } },
+				},
+				yAxis: {
+					type: 'value',
+					name: '高度(m)',
+					axisLabel: { color: '#fff' },
+					nameTextStyle: { color: '#fff' },
+					axisLine: { lineStyle: { color: '#fff' } },
+				},
+				series: [{
+					data: yArr,
+					type: 'line',
+					smooth: true,
+					symbol: 'circle',
+					lineStyle: { color: '#20dbfd', width: 3 },
+					itemStyle: { color: '#20dbfd' }
+				}],
+				grid: { left: 60, right: 30, top: 60, bottom: 40 }
+			};
+			myChart.setOption(option);
+		}
+
+		// 经纬度距离计算（米）
+		function calcDistance(lng1, lat1, lng2, lat2) {
+			function toRad(d) { return d * Math.PI / 180; }
+			let R = 6378137;
+			let radLat1 = toRad(lat1/1e7), radLat2 = toRad(lat2/1e7);
+			let a = radLat1 - radLat2;
+			let b = toRad(lng1/1e7) - toRad(lng2/1e7);
+			let s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a/2),2) +
+				Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
+			s = s * R;
+			return Math.abs(s);
+		}
 	</script>
 </body>
 </html>
