@@ -124,24 +124,24 @@ window.addEventListener('load', function() {
             // });
             
             // 添加飞行路径显示/隐藏控制
-            const togglePathsBtn = document.getElementById('togglePaths');
+            // const togglePathsBtn = document.getElementById('togglePaths');
             
-            togglePathsBtn.addEventListener('click', () => {
-                // 切换显示状态
-                this.showPaths = !this.showPaths;
+            // togglePathsBtn.addEventListener('click', () => {
+            //     // 切换显示状态
+            //     this.showPaths = !this.showPaths;
                 
-                // 更新按钮文本和样式
-                if (this.showPaths) {
-                    togglePathsBtn.textContent = '隐藏轨迹';
-                    togglePathsBtn.classList.add('active');
-                } else {
-                    togglePathsBtn.textContent = '显示轨迹';
-                    togglePathsBtn.classList.remove('active');
-                }
+            //     // 更新按钮文本和样式
+            //     if (this.showPaths) {
+            //         togglePathsBtn.textContent = '隐藏轨迹';
+            //         togglePathsBtn.classList.add('active');
+            //     } else {
+            //         togglePathsBtn.textContent = '显示轨迹';
+            //         togglePathsBtn.classList.remove('active');
+            //     }
                 
-                // 更新所有路径的可见性
-                this.toggleAllPathsVisibility(this.showPaths);
-            });
+            //     // 更新所有路径的可见性
+            //     this.toggleAllPathsVisibility(this.showPaths);
+            // });
         }
 
         simulateDroneData() {
@@ -451,10 +451,10 @@ window.addEventListener('load', function() {
             try {
                 const res = await fetch('/record/recentTracks?n=3');
                 const data = await res.json();
-                if (!data.Records || data.Records.length === 0) return;
+                if (!data.Track || data.Track.length === 0) return;
                 // 按 flightCode 分组
                 const tracksByRecord = {};
-                data.Records.forEach(pt => {
+                data.Track.forEach(pt => {
                     const recordId = pt.flightCode;
                     if (!tracksByRecord[recordId]) tracksByRecord[recordId] = [];
                     // 保留原始点及flightStatus
