@@ -260,8 +260,8 @@ html, body, form{overflow-y:auto;height:100%;}
 /* 连接状态样式 */
 #main8 .connection-status {
     position: absolute;
-    top: 10px;
-    right: 12px;
+    top: 42px;
+    left: 12px;
     font-size: 10px;
     padding: 4px 8px;
     border-radius: 2px;
@@ -440,24 +440,22 @@ html, body, form{overflow-y:auto;height:100%;}
 #main8 .control-panel {
     position: absolute;
     left: 50%;
-    bottom: 30px;
+    bottom: 10px;
     transform: translateX(-50%);
     z-index: 200;
     background: rgba(16, 54, 87, 0.85);
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(19, 128, 189, 0.12);
-    padding: 12px 32px;
+    padding: 8px 10px;
     display: flex;
     gap: 24px;
     border: 1px solid #1380bd;
-    min-width: 360px;
-    min-height: 72px;
     align-items: center;
 }
 
 /* 控制按钮样式 */
 #main8 .control-btn {
-    padding: 10px 24px;
+    padding: 10px 12px;
     border: none;
     border-radius: 10px;
     background: #1380bd;
@@ -474,4 +472,32 @@ html, body, form{overflow-y:auto;height:100%;}
     color: #061537;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(32, 219, 253, 0.18);
+}
+
+/* 新增无人机三面板样式 */
+.drone-info-panels {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+}
+.drone-info-panel {
+    background: rgba(16,54,87,0.85);
+    border: 2px solid #20dbfd;
+    border-radius: 8px;
+    padding: 10px 18px 10px 12px;
+    min-width: 110px;
+    box-shadow: 0 2px 8px rgba(32,219,253,0.08);
+}
+.drone-info-panel p {
+    color: #fff;
+    font-size: 15px;
+    margin: 2px 0;
+    line-height: 1.5;
+}
+.drone-info-panel span {
+    color: #20dbfd;
+    font-weight: bold;
 }

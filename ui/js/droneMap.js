@@ -83,6 +83,10 @@ window.addEventListener('load', function() {
 
                 this.connectWebSocket();
             });
+
+            this._trackPlayTimer = null;      // 当前动画定时器
+            this._trackPlayMode = 'auto';     // 'auto'轮播, 'manual'指定
+            this._autoResumeTimer = null;     // 2分钟自动恢复轮播
         }
 
         // 替换键盘控制为按钮控制
@@ -448,35 +452,35 @@ window.addEventListener('load', function() {
         
         // 新增：获取最近3条飞行记录并动画绘制轨迹
         async showRecentTracksAnimated() {
+            this._stopTrackAnimation();
+            this._trackPlayMode = 'auto';
             try {
                 const res = await fetch('/record/recentTracks?n=3');
                 const data = await res.json();
-                if (!data.Track || data.Track.length === 0) return;
-                // 按 flightCode 分组
+                if (!data.track || data.track.length === 0) return;
                 const tracksByRecord = {};
-                data.Track.forEach(pt => {
+                data.track.forEach(pt => {
                     const recordId = pt.flightCode;
                     if (!tracksByRecord[recordId]) tracksByRecord[recordId] = [];
-                    // 保留原始点及flightStatus
                     tracksByRecord[recordId].push({
                         lng: pt.longitude / 1e7,
                         lat: pt.latitude / 1e7,
                         alt: pt.altitude,
-                        flightStatus: pt.flightStatus
+                        flightStatus: pt.flightStatus,
+                        ...pt
                     });
                 });
-                // 对每条轨迹依次动画绘制
                 const recordIds = Object.keys(tracksByRecord);
                 let idx = 0;
                 const drawNextTrack = () => {
+                    if (this._trackPlayMode !== 'auto') return; // 若被打断则退出
                     if (idx >= recordIds.length) {
-                        // 所有轨迹绘制完毕，延时清除并重新开始
-                        setTimeout(() => {
+                        this._trackPlayTimer = setTimeout(() => {
                             this.clearAllPaths();
                             setTimeout(() => {
                                 this.showRecentTracksAnimated();
-                            }, 500); // 清除后稍作延迟再重播
-                        }, 1000); // 所有轨迹展示完后停留1.5秒
+                            }, 500);
+                        }, 1000);
                         return;
                     }
                     const points = tracksByRecord[recordIds[idx]];
@@ -484,6 +488,7 @@ window.addEventListener('load', function() {
                     let path = [];
                     let i = 0;
                     const animate = () => {
+                        if (this._trackPlayMode !== 'auto') return; // 若被打断则退出
                         if (i < points.length) {
                             // 如果当前点为TakeOff，重置path，避免首尾连线
                             if (points[i].flightStatus === 'TakeOff') {
@@ -491,11 +496,13 @@ window.addEventListener('load', function() {
                             }
                             path.push([points[i].lng, points[i].lat, points[i].alt]);
                             this.updateFlightPath(recordIds[idx], path, color);
+                            // 刷新三面板
+                            this.updateInfoPanel(points[i]);
                             i++;
-                            setTimeout(animate, 1000);
+                            this._trackPlayTimer = setTimeout(animate, 1000);
                         } else {
                             idx++;
-                            setTimeout(drawNextTrack, 2000);
+                            this._trackPlayTimer = setTimeout(drawNextTrack, 2000);
                         }
                     };
                     animate();
@@ -503,6 +510,69 @@ window.addEventListener('load', function() {
                 drawNextTrack();
             } catch (e) {
                 console.error('获取最近轨迹失败', e);
+            }
+        }
+        
+        // 新增：根据飞行记录ID绘制轨迹并展示首条点数据
+        async showTrackByRecordId(recordId) {
+            this._stopTrackAnimation();
+            this._trackPlayMode = 'manual';
+            // 2分钟后自动恢复轮播
+            this._autoResumeTimer = setTimeout(() => {
+                this.showRecentTracksAnimated();
+            }, 2 * 60 * 1000);
+
+            try {
+                const res = await fetch(`/record/recentTracks?id=${recordId}`);
+                const data = await res.json();
+                if (!data.track || data.track.length === 0) {
+                    alert('该记录无轨迹数据');
+                    return;
+                }
+                this.clearAllPaths();
+                const points = data.track.map(pt => ({
+                    lng: pt.longitude / 1e7,
+                    lat: pt.latitude / 1e7,
+                    alt: pt.altitude,
+                    ...pt
+                }));
+                const color = this.getColorByRecordId(recordId);
+                let path = [];
+                let i = 0;
+                const animate = () => {
+                    if (this._trackPlayMode !== 'manual') return; // 若被打断则退出
+                    if (i < points.length) {
+                        // 如果当前点为TakeOff，重置path，避免首尾连线
+                        if (points[i].flightStatus === 'TakeOff') {
+                            path = [];
+                        }
+                        path.push([points[i].lng, points[i].lat, points[i].alt]);
+                        this.updateFlightPath(recordId, path, color);
+                        // 刷新三面板
+                        this.updateInfoPanel(points[i]);
+                        // 地图跟随首点
+                        if (i === 0) {
+                            this.map.setCenter([points[0].lng, points[0].lat]);
+                        }
+                        i++;
+                        this._trackPlayTimer = setTimeout(animate, 1000);
+                    }
+                };
+                animate();
+            } catch (e) {
+                alert('轨迹加载失败');
+            }
+        }
+
+        // 停止所有轨迹动画和自动恢复定时器
+        _stopTrackAnimation() {
+            if (this._trackPlayTimer) {
+                clearTimeout(this._trackPlayTimer);
+                this._trackPlayTimer = null;
+            }
+            if (this._autoResumeTimer) {
+                clearTimeout(this._autoResumeTimer);
+                this._autoResumeTimer = null;
             }
         }
         
@@ -634,73 +704,35 @@ window.addEventListener('load', function() {
         }
         
         updateInfoPanel(data) {
-            // 更新信息面板 - 显示选中无人机的详细信息
-            const infoPanel = document.getElementById('info-panel');
-            const selectionHint = document.getElementById('selection-hint');
-            const droneInfo = document.getElementById('drone-info');
-            
-            // 显示无人机信息，隐藏选择提示
-            infoPanel.classList.remove('no-selection');
-            selectionHint.style.display = 'none';
-            droneInfo.style.display = 'block';
-            
-            // 更新信息面板内容
-            document.getElementById('speed-info').textContent = data.speed.toFixed(2);
-            document.getElementById('altitude-info').textContent = data.altitude.toFixed(2);
-            document.getElementById('height-info').textContent = data.height.toFixed(2);
-            document.getElementById('longitude').textContent = data.longitude.toFixed(6);
-            document.getElementById('latitude').textContent = data.latitude.toFixed(6);
-            document.getElementById('uav-id').textContent = data.id || '-';
-            document.getElementById('soc').textContent = data.SOC + '%' || '0%';
-            
-            // 显示更多无人机相关信息
-            // 检查是否已经添加了额外信息项
-            // if (!document.getElementById('uav-type-info')) {
-            //     // 添加无人机类型
-            //     const typeInfo = document.createElement('p');
-            //     typeInfo.innerHTML = `无人机类型: <span id="uav-type-info">-</span>`;
-            //     droneInfo.appendChild(typeInfo);
-                
-            //     // 添加飞行时间
-            //     const flightTimeInfo = document.createElement('p');
-            //     flightTimeInfo.innerHTML = `飞行时间: <span id="flight-time-info">00:00:00</span>`;
-            //     droneInfo.appendChild(flightTimeInfo);
-                
-            //     // 添加总飞行距离
-            //     const distanceInfo = document.createElement('p');
-            //     distanceInfo.innerHTML = `飞行距离: <span id="distance-info">0 m</span>`;
-            //     droneInfo.appendChild(distanceInfo);
-                
-            //     // 添加电池电量
-            //     const batteryInfo = document.createElement('p');
-            //     batteryInfo.innerHTML = `电池电量: <span id="battery-info">100%</span>`;
-            //     droneInfo.appendChild(batteryInfo);
-            // }
-            
-            // 更新额外信息
-            // document.getElementById('uav-type-info').textContent = data.uavType || '-';
-            
-            // // 格式化飞行时间
-            // const hours = Math.floor(data.flightTime / 3600);
-            // const minutes = Math.floor((data.flightTime % 3600) / 60);
-            // const seconds = data.flightTime % 60;
-            // const formattedTime = 
-            //     String(hours).padStart(2, '0') + ':' + 
-            //     String(minutes).padStart(2, '0') + ':' + 
-            //     String(seconds).padStart(2, '0');
-            // document.getElementById('flight-time-info').textContent = formattedTime;
-            
-            // // 格式化飞行距离
-            // let distanceText = '';
-            // if (data.totalDistance >= 1000) {
-            //     distanceText = (data.totalDistance / 1000).toFixed(2) + ' km';
-            // } else {
-            //     distanceText = Math.round(data.totalDistance) + ' m';
-            // }
-            // document.getElementById('distance-info').textContent = distanceText;
-            
-            // // 更新电池电量
-            // document.getElementById('battery-info').textContent = data.battery + '%';
+            // 兼容 flightCode/id 字段
+            const uavId = data.id || data.flightCode || '--';
+            document.getElementById('panel-uav-id').textContent = uavId;
+
+            // 日期格式化
+            let dateStr = '--';
+            if (data.timeStamp) {
+                let d;
+                if (typeof data.timeStamp === 'string') {
+                    d = new Date(data.timeStamp.replace(/-/g, '/')); // Safari兼容
+                } else if (typeof data.timeStamp === 'number') {
+                    let ts = data.timeStamp > 1e12 ? data.timeStamp : data.timeStamp * 1000;
+                    d = new Date(ts);
+                }
+                if (d && !isNaN(d.getTime())) {
+                    dateStr = d.getFullYear() + '-' +
+                        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(d.getDate()).padStart(2, '0') + ' ' +
+                        String(d.getHours()).padStart(2, '0') + ':' +
+                        String(d.getMinutes()).padStart(2, '0') + ':' +
+                        String(d.getSeconds()).padStart(2, '0');
+                }
+            }
+            document.getElementById('panel-date').textContent = dateStr;
+
+            document.getElementById('panel-soc').textContent = (data.SOC !== undefined ? data.SOC + '%' : '--');
+            document.getElementById('panel-payload').textContent = (data.payload !== undefined ? data.payload : '--');
+            document.getElementById('panel-wind-dir').textContent = (data.windDirect !== undefined ? data.windDirect : '--');
+            document.getElementById('panel-wind-speed').textContent = (data.windSpeed !== undefined ? data.windSpeed : '--');
         }
         
         // 清理方法，用于关闭WebSocket连接和清理资源

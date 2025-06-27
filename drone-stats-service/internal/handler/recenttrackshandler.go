@@ -64,8 +64,13 @@ func RecentTracksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 					Altitude:     pt["altitude"].(int),
 					SOC:          pt["SOC"].(int),
 					GS:           pt["GS"].(int),
+					WindSpeed:    pt["windSpeed"].(int),  // 新增
+					WindDirect:   pt["windDirect"].(int), // 新增
 				})
 			}
+		}
+		if allPoints == nil {
+			allPoints = []types.TrackPoints{}
 		}
 		resp := types.TrackResponse{
 			Track: allPoints,

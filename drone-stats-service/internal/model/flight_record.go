@@ -13,6 +13,8 @@ type FlightRecord struct {
 	EndLng      int64     `db:"end_lng"`
 	Distance    float64   `db:"distance"`
 	BatteryUsed int       `db:"battery_used"`
+	Payload     float64   `db:"payload"` // 新增
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 type FlightTrackPoint struct {
@@ -24,5 +26,7 @@ type FlightTrackPoint struct {
 	Latitude       float64
 	Altitude       float64
 	SOC            int
-	GS             float64 // 新增字段：速度
+	GS             float64
+	WindSpeed      int // 新增
+	WindDirect     int // 新增
 }

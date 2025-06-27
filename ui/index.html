@@ -120,7 +120,22 @@
 					<div id="map-scene"></div>
 					<div class="loading" id="loading">正在加载3D地图...</div>
 					<div class="connection-status disconnected" id="connection-status">连接状态: 未连接</div>
-					<div class="info-panel no-selection" id="info-panel">
+					<!-- 新增：无人机信息三面板 -->
+					<div class="drone-info-panels">
+						<div class="drone-info-panel" id="panel-id-date">
+							<p>UasID: <span id="panel-uav-id">--</span></p>
+							<p>日期: <span id="panel-date">--</span></p>
+						</div>
+						<div class="drone-info-panel" id="panel-battery-payload">
+							<p>电量: <span id="panel-soc">--</span></p>
+							<p>载货量: <span id="panel-payload">--</span></p>
+						</div>
+						<div class="drone-info-panel" id="panel-wind">
+							<p>风向: <span id="panel-wind-dir">--</span></p>
+							<p>风速: <span id="panel-wind-speed">--</span></p>
+						</div>
+					</div>
+					<!-- <div class="info-panel no-selection" id="info-panel">
 						<h3>无人机状态</h3>
 						<p id="selection-hint">点击地图上的无人机图标查看详细信息</p>
 						<div id="drone-info" style="display: none;">
@@ -132,7 +147,7 @@
 							<p>无人机ID: <span id="uav-id">-</span></p>
 							<p>电池电量: <span id="soc">-</span></p>
 						</div>
-					</div>
+					</div> -->
 					<!-- 新增高度曲线图容器，初始隐藏 -->
 					<div id="altitude-curve-chart" style="display:none;">
 						<div id="altitude-curve-echart"></div>
@@ -473,11 +488,14 @@
 				</div>`;
 				$list.append(html);
 			});
-			// 预留点击事件
+			// 点击事件：绘制轨迹并展示三面板
 			$list.find('.record-panel').click(function() {
 				const id = $(this).data('id');
-				// TODO: 展示详情或弹窗
-				// alert('点击记录ID: ' + id);
+				if (droneMap && typeof droneMap.showTrackByRecordId === 'function') {
+					droneMap.showTrackByRecordId(id);
+				} else {
+					alert('地图未加载完成，请稍后再试');
+				}
 			});
 
 			renderFlightRecordsPagination(records.length);
@@ -603,18 +621,20 @@
 			$('#altitude-curve-chart').fadeIn(200);
 			// 拉取最近一条轨迹
 			$.get('/record/recentTracks?n=1', function(res) {
-				if (!res || !res.Track || res.Track.length === 0) {
-					showAltitudeCurve([], []);
+				if (!res || !res.track || res.track.length === 0) {
+					showAltitudeCurve([], [], []);
 					return;
 				}
 				// 轨迹点按时间排序
-				let points = res.Track;
+				let points = res.track;
 				// 计算累计距离
 				let distArr = [0];
 				let altArr = [];
+				let socArr = [];
 				for (let i = 0; i < points.length; i++) {
 					let pt = points[i];
 					altArr.push(pt.Altitude || pt.altitude || 0);
+					socArr.push(pt.SOC !== undefined ? pt.SOC : (pt.soc !== undefined ? pt.soc : '--'));
 					if (i > 0) {
 						let prev = points[i-1];
 						let d = calcDistance(
@@ -628,7 +648,7 @@
 				}
 				// 单位转为km，保留两位小数
 				let distArrKm = distArr.map(d => d.toFixed(2));
-				showAltitudeCurve(distArrKm, altArr);
+				showAltitudeCurve(distArrKm, altArr, socArr);
 			});
 		});
 
@@ -638,12 +658,26 @@
 		});
 
 		// 绘制曲线
-		function showAltitudeCurve(xArr, yArr) {
+		function showAltitudeCurve(xArr, yArr, socArr) {
 			let chartDom = document.getElementById('altitude-curve-echart');
 			let myChart = echarts.init(chartDom);
 			let option = {
 				title: { text: '飞行高度曲线', left: 'center', textStyle: { color: '#fff' } },
-				tooltip: { trigger: 'axis' },
+				tooltip: {
+					trigger: 'axis',
+					formatter: function(params) {
+						// params[0] 为当前点
+						let idx = params[0].dataIndex;
+						let dist = xArr[idx] || '--';
+						let alt = yArr[idx] || '--';
+						let soc = socArr && socArr[idx] !== undefined ? socArr[idx] : '--';
+						return `距离：${dist} m<br/>高度：${alt} m<br/>电量：${soc} %`;
+					},
+					backgroundColor: 'rgba(16,54,87,0.98)',
+					borderColor: '#20dbfd',
+					borderWidth: 1,
+					textStyle: { color: '#fff', fontSize: 15 }
+				},
 				xAxis: {
 					type: 'category',
 					name: '飞行距离(m)',

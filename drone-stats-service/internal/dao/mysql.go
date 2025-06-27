@@ -44,9 +44,9 @@ func (d *MySQLDao) SaveFlightRecord(uavId string, startTime, endTime time.Time, 
 // 保存主表并返回自增ID
 func (d *MySQLDao) SaveFlightRecordAndGetID(fr model.FlightRecord) (int64, error) {
 	res, err := d.DB.Exec(`INSERT INTO flight_records 
-        (uav_id, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		fr.UavId, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed)
+        (uav_id, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, payload) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		fr.UavId, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed, fr.Payload)
 	if err != nil {
 		fmt.Println("MySQL主表写入错误:", err)
 		return 0, err
@@ -60,13 +60,12 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	if len(points) == 0 {
 		return nil
 	}
-	fmt.Println("MySQL子表开始写入")
-	query := "INSERT INTO flight_track_points (flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs) VALUES "
+	query := "INSERT INTO flight_track_points (flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs, windSpeed, windDirect) VALUES "
 	vals := []interface{}{}
 	for _, tp := range points {
-		query += "(?, ?, ?, ?, ?, ?, ?, ?),"
+		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
 		vals = append(vals, tp.FlightRecordID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
-			tp.Longitude, tp.Latitude, tp.Altitude, tp.SOC, tp.GS)
+			tp.Longitude, tp.Latitude, tp.Altitude, tp.SOC, tp.GS, tp.WindSpeed, tp.WindDirect)
 	}
 	query = query[:len(query)-1] // 去掉最后一个逗号
 	_, err := d.DB.Exec(query, vals...)
@@ -387,7 +386,7 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64
 // 查询某条飞行记录的所有轨迹点
 func (d *MySQLDao) GetTrackPointsByRecordId(recordId int) ([]map[string]interface{}, error) {
 	rows, err := d.DB.Query(`
-        SELECT flight_status, time_stamp, longitude, latitude, altitude, soc
+        SELECT id, flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs, windSpeed, windDirect
         FROM flight_track_points
         WHERE flight_record_id = ?
         ORDER BY time_stamp ASC
@@ -398,17 +397,26 @@ func (d *MySQLDao) GetTrackPointsByRecordId(recordId int) ([]map[string]interfac
 	defer rows.Close()
 	var points []map[string]interface{}
 	for rows.Next() {
-		var flightStatus, timeStamp string
-		var longitude, latitude int64
-		var altitude, soc int
-		if err := rows.Scan(&flightStatus, &timeStamp, &longitude, &latitude, &altitude, &soc); err == nil {
+		var (
+			id, flightRecordId                   int64
+			flightStatus                         string
+			timeStamp                            time.Time
+			longitude, latitude                  int64 // 改为 int64
+			altitude, soc, windSpeed, windDirect int
+			gs                                   int // 改为 int，数据库里为 NULL 时用 int
+		)
+		err := rows.Scan(&id, &flightRecordId, &flightStatus, &timeStamp, &longitude, &latitude, &altitude, &soc, &gs, &windSpeed, &windDirect)
+		if err == nil {
 			points = append(points, map[string]interface{}{
 				"flightStatus": flightStatus,
-				"timeStamp":    timeStamp,
+				"timeStamp":    timeStamp.Format("2006-01-02 15:04:05"),
 				"longitude":    longitude,
 				"latitude":     latitude,
 				"altitude":     altitude,
 				"SOC":          soc,
+				"GS":           gs,
+				"windSpeed":    windSpeed,
+				"windDirect":   windDirect,
 			})
 		}
 	}
