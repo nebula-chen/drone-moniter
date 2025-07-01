@@ -479,8 +479,8 @@ window.addEventListener('load', function() {
                             this.clearAllPaths();
                             setTimeout(() => {
                                 this.showRecentTracksAnimated();
-                            }, 500);
-                        }, 1000);
+                            }, 100); // 重新开始轮播
+                        }, 1000);  // 所有轨迹绘制完后间隔1秒
                         return;
                     }
                     const points = tracksByRecord[recordIds[idx]];
@@ -499,10 +499,10 @@ window.addEventListener('load', function() {
                             // 刷新三面板
                             this.updateInfoPanel(points[i]);
                             i++;
-                            this._trackPlayTimer = setTimeout(animate, 1000);
+                            this._trackPlayTimer = setTimeout(animate, 100); // 每个点间隔半秒
                         } else {
                             idx++;
-                            this._trackPlayTimer = setTimeout(drawNextTrack, 2000);
+                            this._trackPlayTimer = setTimeout(drawNextTrack, 2000); // 每条轨迹绘制完后间隔2秒
                         }
                     };
                     animate();
@@ -555,7 +555,7 @@ window.addEventListener('load', function() {
                             this.map.setCenter([points[0].lng, points[0].lat]);
                         }
                         i++;
-                        this._trackPlayTimer = setTimeout(animate, 1000);
+                        this._trackPlayTimer = setTimeout(animate, 100);
                     }
                 };
                 animate();
