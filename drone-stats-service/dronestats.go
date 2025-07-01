@@ -60,7 +60,7 @@ func processAllUasData(ctx *svc.ServiceContext) {
 	}
 	for id, regTime := range ids {
 		// 自动注册
-		if err := ctx.MySQLDao.RegisterUasIfNotExist(id, regTime); err != nil {
+		if err := ctx.MySQLDao.RegisterSortiesIfNotExist(id, regTime); err != nil {
 			fmt.Println("注册无人机失败:", id, err)
 		}
 		// 拉取该无人机近一段时间的飞行数据并处理
@@ -68,9 +68,9 @@ func processAllUasData(ctx *svc.ServiceContext) {
 		start := end.Add(-1 * time.Hour) // 例如只处理最近24小时
 		// 复用已有逻辑
 		req := &types.FlightRecordReq{
-			FlightCode: id,
-			StartTime:  start.Format(time.RFC3339),
-			EndTime:    end.Format(time.RFC3339),
+			OrderID:   id,
+			StartTime: start.Format(time.RFC3339),
+			EndTime:   end.Format(time.RFC3339),
 		}
 		logic := logic.NewGetFlightRecordsLogic(context.Background(), ctx)
 		_, err := logic.GetFlightRecords(req)
@@ -99,7 +99,7 @@ func autoMigrate(db *sql.DB) error {
 	_, err = db.Exec(`
     CREATE TABLE IF NOT EXISTS flight_records (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        uav_id VARCHAR(64) NOT NULL,
+        OrderID VARCHAR(128) NOT NULL,
         start_time DATETIME NOT NULL,
         end_time DATETIME,
         start_lat BIGINT,
@@ -118,14 +118,23 @@ func autoMigrate(db *sql.DB) error {
 	_, err = db.Exec(`
     CREATE TABLE IF NOT EXISTS flight_track_points (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        flight_record_id INT NOT NULL,
-        flight_status VARCHAR(16),
-        time_stamp DATETIME,
+        OrderID VARCHAR(128) NOT NULL,
+        flightStatus VARCHAR(16),
+        timeStamp DATETIME,
         longitude BIGINT,
         latitude BIGINT,
-        altitude DOUBLE(6,1),
-        soc INT,
-		gs BIGINT
+        heightType INT,
+        height INT,
+        altitude INT,
+        VS INT,
+        GS INT,
+        course INT,
+        SOC INT,
+        RM INT,
+        windSpeed INT,
+        windDirect INT,
+        temperture INT,
+        humidity INT
     );`)
 	return err
 }

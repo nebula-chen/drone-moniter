@@ -15,11 +15,11 @@ func ExportFlightRecordsToCSV(records []types.FlightRecord, filename string) err
 	defer file.Close()
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
-	writer.Write([]string{"FlightCode", "StartTime", "EndTime", "Longitude", "Latitude", "Altitude", "Distance", "SOC"})
+	writer.Write([]string{"OrderID", "StartTime", "EndTime", "Longitude", "Latitude", "Altitude", "Distance", "SOC"})
 	for _, r := range records {
 		writer.Write([]string{
 			fmt.Sprintf("%d", r.ID),
-			r.UavId,
+			r.OrderID,
 			r.StartTime,
 			r.EndTime,
 			fmt.Sprintf("%d", r.StartLng),

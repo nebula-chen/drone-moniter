@@ -32,7 +32,8 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	// 转为UTC0
 	start = start.UTC()
 	end = end.UTC()
-	records, err := l.svcCtx.InfluxDao.QueryFlightRecords(req.FlightCode, start, end)
+
+	records, err := l.svcCtx.InfluxDao.QueryFlightRecords(req.OrderID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +108,8 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	startPoint := flightPoints[0]
 	endPoint := flightPoints[len(flightPoints)-1]
 
-	startSOC := getInt64(startPoint, "SOC")
-	endSOC := getInt64(endPoint, "SOC")
+	startRM := getInt64(startPoint, "RM")
+	endRM := getInt64(endPoint, "RM")
 
 	// 计算距离
 	var totalDistance float64
@@ -122,7 +123,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 
 	// 存储到flight_records主表，注意经纬度/高度转换
 	fr := model.FlightRecord{
-		UavId:       req.FlightCode,
+		OrderID:     req.OrderID,
 		StartTime:   startPoint["_time"].(time.Time),
 		EndTime:     endPoint["_time"].(time.Time),
 		StartLat:    getInt64(startPoint, "latitude"),
@@ -130,39 +131,46 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		EndLat:      getInt64(endPoint, "latitude"),
 		EndLng:      getInt64(endPoint, "longitude"),
 		Distance:    totalDistance,
-		BatteryUsed: int(startSOC - endSOC),
+		BatteryUsed: int(startRM - endRM),
 		Payload:     getFloat64(endPoint, "payload"), // 新增
 	}
 
 	// 新增：插入前判断是否已存在
-	exists, err := l.svcCtx.MySQLDao.FlightRecordExists(fr.UavId, fr.StartTime, fr.EndTime)
+	exists, err := l.svcCtx.MySQLDao.FlightRecordExists(fr.OrderID, fr.StartTime, fr.EndTime)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		l.Logger.Infof("该飞行架次已存在: uav_id=%s, start=%v, end=%v", fr.UavId, fr.StartTime, fr.EndTime)
+		l.Logger.Infof("该飞行架次已存在: uav_id=%s, start=%v, end=%v", fr.OrderID, fr.StartTime, fr.EndTime)
 		return &types.TrackResponse{}, nil
 	}
 
-	flightRecordID, err := l.svcCtx.MySQLDao.SaveFlightRecordAndGetID(fr)
+	orderID, err := l.svcCtx.MySQLDao.SaveFlightRecordAndGetOrderID(fr)
 	if err != nil {
 		return nil, err
 	}
 
-	// 批量构造轨迹点
+	// 批量构造轨迹点，结构与flight_record.go同步
 	var trackPoints []model.FlightTrackPoint
 	for _, r := range flightPoints {
 		point := model.FlightTrackPoint{
-			FlightRecordID: flightRecordID,
-			FlightStatus:   getString(r, "flightStatus"),
-			TimeStamp:      r["_time"].(time.Time),
-			Longitude:      float64(getInt64(r, "longitude")),
-			Latitude:       float64(getInt64(r, "latitude")),
-			Altitude:       float64(getInt64(r, "altitude")) / 10,
-			SOC:            int(getInt64(r, "SOC")),
-			GS:             float64(getInt64(r, "GS")),
-			WindSpeed:      int(getInt64(r, "windSpeed")),  // 新增
-			WindDirect:     int(getInt64(r, "windDirect")), // 新增
+			OrderID:      orderID,
+			FlightStatus: getString(r, "flightStatus"),
+			TimeStamp:    r["_time"].(time.Time),
+			Longitude:    getInt64(r, "longitude"),
+			Latitude:     getInt64(r, "latitude"),
+			HeightType:   int(getInt64(r, "heightType")),
+			Height:       int(getInt64(r, "height")),
+			Altitude:     int(getInt64(r, "altitude")),
+			VS:           int(getInt64(r, "VS")),
+			GS:           int(getInt64(r, "GS")),
+			Course:       int(getInt64(r, "course")),
+			SOC:          int(getInt64(r, "SOC")),
+			RM:           int(getInt64(r, "RM")),
+			WindSpeed:    int(getInt64(r, "windSpeed")),
+			WindDirect:   int(getInt64(r, "windDirect")),
+			Temperture:   int(getInt64(r, "temperture")),
+			Humidity:     int(getInt64(r, "humidity")),
 		}
 		trackPoints = append(trackPoints, point)
 	}
@@ -173,18 +181,27 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		fmt.Println("批量插入轨迹点失败:", err)
 	}
 
-	// 返回整理后的飞行轨迹（原样返回，或可转换为实际值）
+	// 返回整理后的飞行轨迹
 	resp = &types.TrackResponse{}
 	for _, r := range flightPoints {
 		resp.Track = append(resp.Track, types.TrackPoints{
-			FlightCode:   req.FlightCode,
+			OrderID:      req.OrderID,
 			FlightStatus: getString(r, "flightStatus"),
-			TimeStamp:    r["_time"].(time.Time).Format(time.RFC3339),
+			TimeStamp:    r["_time"].(time.Time).Format("20060102150405"), // 按API要求格式
 			Longitude:    getInt64(r, "longitude"),
 			Latitude:     getInt64(r, "latitude"),
+			HeightType:   int(getInt64(r, "heightType")),
+			Height:       int(getInt64(r, "height")),
 			Altitude:     int(getInt64(r, "altitude")),
-			SOC:          int(getInt64(r, "SOC")),
+			VS:           int(getInt64(r, "VS")),
 			GS:           int(getInt64(r, "GS")),
+			Course:       int(getInt64(r, "course")),
+			SOC:          int(getInt64(r, "SOC")),
+			RM:           int(getInt64(r, "RM")),
+			WindSpeed:    int(getInt64(r, "windSpeed")),
+			WindDirect:   int(getInt64(r, "windDirect")),
+			Temperture:   int(getInt64(r, "temperture")),
+			Humidity:     int(getInt64(r, "humidity")),
 		})
 	}
 	return

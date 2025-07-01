@@ -24,10 +24,10 @@ func NewMySQLDao(dsn string) (*MySQLDao, error) {
 }
 
 // 保存飞行记录
-func (d *MySQLDao) SaveFlightRecord(uavId string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance float64, batteryUsed int) error {
+func (d *MySQLDao) SaveFlightRecord(orderID string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance float64, batteryUsed int) error {
 	_, err := d.DB.Exec(
 		`INSERT INTO flight_records (
-			uav_id,
+			orderID,
 			start_time,
 			end_time,
 			start_lat,
@@ -37,22 +37,21 @@ func (d *MySQLDao) SaveFlightRecord(uavId string, startTime, endTime time.Time, 
 			distance,
 			battery_used,
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		uavId, startTime, endTime, start_lat, start_lng, end_lat, end_lng, distance, batteryUsed)
+		orderID, startTime, endTime, start_lat, start_lng, end_lat, end_lng, distance, batteryUsed)
 	return err
 }
 
-// 保存主表并返回自增ID
-func (d *MySQLDao) SaveFlightRecordAndGetID(fr model.FlightRecord) (int64, error) {
-	res, err := d.DB.Exec(`INSERT INTO flight_records 
-        (uav_id, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, payload) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		fr.UavId, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed, fr.Payload)
+// 保存主表并返回orderID（飞行架次唯一编号）
+func (d *MySQLDao) SaveFlightRecordAndGetOrderID(fr model.FlightRecord) (string, error) {
+	_, err := d.DB.Exec(`INSERT INTO flight_records 
+		(orderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, payload) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		fr.OrderID, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed, fr.Payload)
 	if err != nil {
 		fmt.Println("MySQL主表写入错误:", err)
-		return 0, err
+		return "", err
 	}
-	// fmt.Println("飞行记录写入MySQL成功")
-	return res.LastInsertId()
+	return fr.OrderID, nil
 }
 
 // 保存轨迹点
@@ -60,12 +59,13 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	if len(points) == 0 {
 		return nil
 	}
-	query := "INSERT INTO flight_track_points (flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs, windSpeed, windDirect) VALUES "
+	query := "INSERT INTO flight_track_points (orderID, flight_status, time_stamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity) VALUES "
 	vals := []interface{}{}
 	for _, tp := range points {
-		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
-		vals = append(vals, tp.FlightRecordID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
-			tp.Longitude, tp.Latitude, tp.Altitude, tp.SOC, tp.GS, tp.WindSpeed, tp.WindDirect)
+		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
+		vals = append(vals,
+			tp.OrderID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
+			tp.Longitude, tp.Latitude, tp.HeightType, tp.Height, tp.Altitude, tp.VS, tp.GS, tp.Course, tp.SOC, tp.RM, tp.WindSpeed, tp.WindDirect, tp.Temperture, tp.Humidity)
 	}
 	query = query[:len(query)-1] // 去掉最后一个逗号
 	_, err := d.DB.Exec(query, vals...)
@@ -78,51 +78,51 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 }
 
 // 查询总无人机数
-func (d *MySQLDao) CountTotalUas() (int, error) {
+func (d *MySQLDao) CountTotalSorties() (int, error) {
 	var total int
-	err := d.DB.QueryRow("SELECT COUNT(*) FROM uas_devices").Scan(&total)
+	err := d.DB.QueryRow("SELECT COUNT(*) FROM flight_sorties").Scan(&total)
 	return total, err
 }
 
 // 查询在线无人机数（假设status=1为在线）
-func (d *MySQLDao) CountOnlineUas() (int, error) {
+func (d *MySQLDao) CountOnlineSorties() (int, error) {
 	var online int
-	err := d.DB.QueryRow("SELECT COUNT(*) FROM uas_devices WHERE status=1").Scan(&online)
+	err := d.DB.QueryRow("SELECT COUNT(*) FROM flight_sorties WHERE status=1").Scan(&online)
 	return online, err
 }
 
-// 注册新无人机
-func (d *MySQLDao) RegisterUasIfNotExist(uasId string, regTime time.Time) error {
+// 注册新架次
+func (d *MySQLDao) RegisterSortiesIfNotExist(orderID string, regTime time.Time) error {
 	var exists int
-	err := d.DB.QueryRow("SELECT COUNT(*) FROM uas_devices WHERE uas_id=?", uasId).Scan(&exists)
+	err := d.DB.QueryRow("SELECT COUNT(*) FROM flight_sorties WHERE orderID=?", orderID).Scan(&exists)
 	if err != nil {
 		return err
 	}
 	if exists == 0 {
-		_, err := d.DB.Exec("INSERT INTO uas_devices (uas_id, register_time, status) VALUES (?, ?, ?)", uasId, regTime, 0)
+		_, err := d.DB.Exec("INSERT INTO flight_sorties (orderID, register_time, status) VALUES (?, ?, ?)", orderID, regTime, 0)
 		return err
 	}
 	return nil
 }
 
 // 判断飞行架次是否已存在
-func (d *MySQLDao) FlightRecordExists(uavId string, startTime, endTime time.Time) (bool, error) {
+func (d *MySQLDao) FlightRecordExists(orderID string, startTime, endTime time.Time) (bool, error) {
 	var cnt int
 	err := d.DB.QueryRow(
-		"SELECT COUNT(*) FROM flight_records WHERE uav_id=? AND start_time=? AND end_time=?",
-		uavId, startTime, endTime,
+		"SELECT COUNT(*) FROM flight_records WHERE orderID=? AND start_time=? AND end_time=?",
+		orderID, startTime, endTime,
 	).Scan(&cnt)
 	return cnt > 0, err
 }
 
 // 查询飞行记录（支持条件筛选）
-func (d *MySQLDao) QueryFlightRecords(uavId, startTime, endTime string) ([]map[string]interface{}, error) {
-	query := `SELECT id, uav_id, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
+func (d *MySQLDao) QueryFlightRecords(orderID, startTime, endTime string) ([]map[string]interface{}, error) {
+	query := `SELECT id, orderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
         FROM flight_records WHERE 1=1`
 	args := []interface{}{}
-	if uavId != "" {
-		query += " AND uav_id=?"
-		args = append(args, uavId)
+	if orderID != "" {
+		query += " AND orderID=?"
+		args = append(args, orderID)
 	}
 	if startTime != "" {
 		query += " AND start_time >= ?"
@@ -142,18 +142,18 @@ func (d *MySQLDao) QueryFlightRecords(uavId, startTime, endTime string) ([]map[s
 	for rows.Next() {
 		var (
 			id, batteryUsed                    int
-			uavId                              string
+			orderID                            string
 			startTime, endTime, createdAt      sql.NullTime
 			startLat, startLng, endLat, endLng sql.NullInt64
 			distance                           sql.NullFloat64
 		)
-		err := rows.Scan(&id, &uavId, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt)
+		err := rows.Scan(&id, &orderID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt)
 		if err != nil {
 			continue
 		}
 		record := map[string]interface{}{
 			"id":           id,
-			"uav_id":       uavId,
+			"OrderID":      orderID,
 			"start_time":   startTime.Time.Format("2006-01-02 15:04:05"),
 			"end_time":     endTime.Time.Format("2006-01-02 15:04:05"),
 			"start_lat":    startLat.Int64,
@@ -384,13 +384,13 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64
 }
 
 // 查询某条飞行记录的所有轨迹点
-func (d *MySQLDao) GetTrackPointsByRecordId(recordId int) ([]map[string]interface{}, error) {
+func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interface{}, error) {
 	rows, err := d.DB.Query(`
-        SELECT id, flight_record_id, flight_status, time_stamp, longitude, latitude, altitude, soc, gs, windSpeed, windDirect
+        SELECT id, orderID, flight_status, time_stamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity
         FROM flight_track_points
-        WHERE flight_record_id = ?
+        WHERE orderID = ?
         ORDER BY time_stamp ASC
-    `, recordId)
+    `, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -398,25 +398,35 @@ func (d *MySQLDao) GetTrackPointsByRecordId(recordId int) ([]map[string]interfac
 	var points []map[string]interface{}
 	for rows.Next() {
 		var (
-			id, flightRecordId                   int64
-			flightStatus                         string
-			timeStamp                            time.Time
-			longitude, latitude                  int64 // 改为 int64
-			altitude, soc, windSpeed, windDirect int
-			gs                                   int // 改为 int，数据库里为 NULL 时用 int
+			id                                int64
+			orderID, flightStatus             string
+			timeStamp                         time.Time
+			longitude, latitude               int64
+			heightType, height, altitude      int
+			VS, GS, course, SOC, RM           int
+			windSpeed, windDirect, temperture int
+			humidity                          int
 		)
-		err := rows.Scan(&id, &flightRecordId, &flightStatus, &timeStamp, &longitude, &latitude, &altitude, &soc, &gs, &windSpeed, &windDirect)
+		err := rows.Scan(&id, &orderID, &flightStatus, &timeStamp, &longitude, &latitude, &heightType, &height, &altitude, &VS, &GS, &course, &SOC, &RM, &windSpeed, &windDirect, &temperture, &humidity)
 		if err == nil {
 			points = append(points, map[string]interface{}{
+				"orderID":      orderID,
 				"flightStatus": flightStatus,
 				"timeStamp":    timeStamp.Format("2006-01-02 15:04:05"),
 				"longitude":    longitude,
 				"latitude":     latitude,
+				"heightType":   heightType,
+				"height":       height,
 				"altitude":     altitude,
-				"SOC":          soc,
-				"GS":           gs,
+				"VS":           VS,
+				"GS":           GS,
+				"course":       course,
+				"SOC":          SOC,
+				"RM":           RM,
 				"windSpeed":    windSpeed,
 				"windDirect":   windDirect,
+				"temperture":   temperture,
+				"humidity":     humidity,
 			})
 		}
 	}

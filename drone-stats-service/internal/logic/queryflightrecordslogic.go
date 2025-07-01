@@ -24,7 +24,8 @@ func NewQueryFlightRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq) (resp *types.FlightRecordsResponse, err error) {
-	records, err := l.svcCtx.MySQLDao.QueryFlightRecords(req.FlightCode, req.StartTime, req.EndTime)
+	// 字段名已变更：OrderID, StartTime, EndTime
+	records, err := l.svcCtx.MySQLDao.QueryFlightRecords(req.OrderID, req.StartTime, req.EndTime)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq)
 	for _, r := range records {
 		resp.Flightrecords = append(resp.Flightrecords, types.FlightRecord{
 			ID:          r["id"].(int),
-			UavId:       r["uav_id"].(string),
+			OrderID:     r["OrderID"].(string),
 			StartTime:   r["start_time"].(string),
 			EndTime:     r["end_time"].(string),
 			StartLat:    r["start_lat"].(int64),
