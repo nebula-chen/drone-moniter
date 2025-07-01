@@ -63,9 +63,12 @@ func processAllUasData(ctx *svc.ServiceContext) {
 		if err := ctx.MySQLDao.RegisterSortiesIfNotExist(id, regTime); err != nil {
 			fmt.Println("注册无人机失败:", id, err)
 		}
+
 		// 拉取该无人机近一段时间的飞行数据并处理
 		end := time.Now().UTC()
-		start := end.Add(-1 * time.Hour) // 例如只处理最近24小时
+		// start := time.Date(2025, 6, 19, 11, 0, 0, 0, time.UTC) // 从25年6月19号19点整开始拉取数据（丰翼数据上报接口当天19:20发布生产环境）
+		start := end.Add(-1 * time.Hour) // 只拉取最近1小时
+
 		// 复用已有逻辑
 		req := &types.FlightRecordReq{
 			OrderID:   id,
