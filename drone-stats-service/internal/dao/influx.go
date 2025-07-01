@@ -22,14 +22,14 @@ func NewInfluxDao(client influxdb2.Client, org string) *InfluxDao {
 }
 
 // 查询指定无人机在时间范围内的飞行数据
-func (d *InfluxDao) QueryFlightRecords(uasId string, start, end time.Time) ([]map[string]interface{}, error) {
+func (d *InfluxDao) QueryFlightRecords(orderID string, start, end time.Time) ([]map[string]interface{}, error) {
 	query := fmt.Sprintf(`
 		from(bucket:"drone_data")
 		|> range(start: %s, stop: %s)
 		|> filter(fn: (r) => r["_measurement"] == "drone_status")
-		|> filter(fn: (r) => r["flightCode"] == "%s")
+		|> filter(fn: (r) => r["orderID"] == "%s")
 		|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-		`, start.Format(time.RFC3339), end.Format(time.RFC3339), uasId,
+		`, start.Format(time.RFC3339), end.Format(time.RFC3339), orderID,
 	)
 
 	result, err := d.QueryAPI.Query(context.Background(), query)
@@ -51,7 +51,7 @@ func (d *InfluxDao) GetAllUasIDsAndFirstSeen() (map[string]time.Time, error) {
         import "influxdata/influxdb/schema"
         schema.tagValues(
             bucket: "drone_data",
-            tag: "flightCode"
+            tag: "orderID"
         )
     `
 	result, err := d.QueryAPI.Query(context.Background(), query)
@@ -69,7 +69,7 @@ func (d *InfluxDao) GetAllUasIDsAndFirstSeen() (map[string]time.Time, error) {
             from(bucket:"drone_data")
             |> range(start: 0)
             |> filter(fn: (r) => r["_measurement"] == "drone_status")
-            |> filter(fn: (r) => r["flightCode"] == "%s")
+            |> filter(fn: (r) => r["orderID"] == "%s")
             |> keep(columns: ["_time"])
             |> sort(columns: ["_time"], desc: false)
             |> limit(n:1)

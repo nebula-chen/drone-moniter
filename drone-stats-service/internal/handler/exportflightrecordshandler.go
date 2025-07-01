@@ -10,10 +10,10 @@ import (
 
 func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		uavId := r.URL.Query().Get("uavId")
+		orderID := r.URL.Query().Get("OrderID")
 		startTime := r.URL.Query().Get("startTime")
 		endTime := r.URL.Query().Get("endTime")
-		records, err := svcCtx.MySQLDao.QueryFlightRecords(uavId, startTime, endTime)
+		records, err := svcCtx.MySQLDao.QueryFlightRecords(orderID, startTime, endTime)
 		if err != nil {
 			http.Error(w, "查询失败", http.StatusInternalServerError)
 			return
@@ -21,11 +21,11 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/csv")
 		w.Header().Set("Content-Disposition", "attachment;filename=flight_records.csv")
 		writer := csv.NewWriter(w)
-		writer.Write([]string{"ID", "无人机ID", "起飞时间", "降落时间", "起飞纬度", "起飞经度", "降落纬度", "降落经度", "飞行距离", "电池使用量", "创建时间"})
+		writer.Write([]string{"ID", "架次编号", "起飞时间", "降落时间", "起飞纬度", "起飞经度", "降落纬度", "降落经度", "飞行距离", "电池使用量", "创建时间"})
 		for _, r := range records {
 			writer.Write([]string{
 				strconv.Itoa(r["id"].(int)),
-				r["uav_id"].(string),
+				r["OrderID"].(string),
 				r["start_time"].(string),
 				r["end_time"].(string),
 				strconv.FormatInt(r["start_lat"].(int64), 10),

@@ -24,11 +24,11 @@ func NewGetUasStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUa
 }
 
 func (l *GetUasStatsLogic) GetUasStats() (resp *types.UasStatsResp, err error) {
-	total, err := l.svcCtx.MySQLDao.CountTotalUas()
+	total, err := l.svcCtx.MySQLDao.CountTotalSorties()
 	if err != nil {
 		return nil, err
 	}
-	online, err := l.svcCtx.MySQLDao.CountOnlineUas()
+	online, err := l.svcCtx.MySQLDao.CountOnlineSorties()
 	if err != nil {
 		return nil, err
 	}
