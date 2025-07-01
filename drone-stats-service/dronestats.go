@@ -84,14 +84,12 @@ func processAllUasData(ctx *svc.ServiceContext) {
 }
 
 func autoMigrate(db *sql.DB) error {
-	// uas_devices 表
+	// flight_sorties 表
 	_, err := db.Exec(`
-    CREATE TABLE IF NOT EXISTS uas_devices (
+    CREATE TABLE IF NOT EXISTS flight_sorties (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        uas_id VARCHAR(64) NOT NULL UNIQUE,
+        OrderID VARCHAR(128) NOT NULL UNIQUE,
         register_time DATETIME,
-        last_online_time DATETIME,
-        status TINYINT,
         model VARCHAR(64)
     );`)
 	if err != nil {
