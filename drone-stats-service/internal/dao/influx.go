@@ -27,7 +27,7 @@ func (d *InfluxDao) QueryFlightRecords(orderID string, start, end time.Time) ([]
 		from(bucket:"drone_data")
 		|> range(start: %s, stop: %s)
 		|> filter(fn: (r) => r["_measurement"] == "drone_status")
-		|> filter(fn: (r) => r["orderID"] == "%s")
+		|> filter(fn: (r) => r["_field"] == "%s")
 		|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
 		`, start.Format(time.RFC3339), end.Format(time.RFC3339), orderID,
 	)
@@ -69,7 +69,7 @@ func (d *InfluxDao) GetAllUasIDsAndFirstSeen() (map[string]time.Time, error) {
             from(bucket:"drone_data")
             |> range(start: 0)
             |> filter(fn: (r) => r["_measurement"] == "drone_status")
-            |> filter(fn: (r) => r["orderID"] == "%s")
+            |> filter(fn: (r) => r["_field"] == "%s")
             |> keep(columns: ["_time"])
             |> sort(columns: ["_time"], desc: false)
             |> limit(n:1)
