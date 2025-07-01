@@ -40,44 +40,52 @@
 	</div>
 	<div class="visual">
 		<div class="visual_left">
-			<div class="visual_box">
+			<div class="visual_box stat-box" id="flight-stat-box">
 				<div class="visual_title">
 					<span>飞行架次统计</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="visual_chart_switch">
-					<button id="btn-year">年架次</button>
-					<button id="btn-month">月架次</button>
-					<button id="btn-day" class="active">日架次</button>
-					<span class="total-count" id="total-count-flight" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
+				<div class="stat-header">
+					<span class="stat-type" id="flight-stat-type">日架次</span>
+					<span class="total-count" id="total-count-flight">总数：0</span>
 				</div>
-				<div class="visual_chart" id="main1"></div>
+				<div class="visual_chart stat-chart-area" id="main1-area">
+					<button class="stat-switch-btn stat-switch-prev" type="button">&lt;</button>
+					<div id="main1" style="height:100%;"></div>
+					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
+				</div>
 			</div>
-			<div class="visual_box">
+			<!-- 飞行耗电统计 -->
+			<div class="visual_box stat-box" id="soc-stat-box">
 				<div class="visual_title">
 					<span>飞行耗电统计</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="visual_chart_switch">
-					<button id="btn-year-soc">年耗电</button>
-					<button id="btn-month-soc">月耗电</button>
-					<button id="btn-day-soc" class="active">日耗电</button>
-					<span class="total-count" id="total-count-soc" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
+				<div class="stat-header">
+					<span class="stat-type" id="soc-stat-type">日耗电</span>
+					<span class="total-count" id="total-count-soc">总数：0</span>
 				</div>
-				<div class="visual_chart" id="main_soc"></div>
+				<div class="visual_chart stat-chart-area" id="main_soc-area">
+					<button class="stat-switch-btn stat-switch-prev" type="button">&lt;</button>
+					<div id="main_soc" style="height:100%;"></div>
+					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
+				</div>
 			</div>
-			<div class="visual_box">
+			<!-- 运输货量统计 -->
+			<div class="visual_box stat-box" id="payload-stat-box">
 				<div class="visual_title">
 					<span>运输货量统计</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="visual_chart_switch">
-					<button id="btn-year-payload">年货量</button>
-					<button id="btn-month-payload">月货量</button>
-					<button id="btn-day-payload" class="active">日货量</button>
-					<span class="total-count" id="total-count-payload" style="float:right;display:none;color:#fff;font-size:14px;margin-left:10px;"></span>
+				<div class="stat-header">
+					<span class="stat-type" id="payload-stat-type">日货量</span>
+					<span class="total-count" id="total-count-payload">总数：0</span>
 				</div>
-				<div class="visual_chart" id="main_payload"></div>
+				<div class="visual_chart stat-chart-area" id="main_payload-area">
+					<button class="stat-switch-btn stat-switch-prev" type="button">&lt;</button>
+					<div id="main_payload" style="height:100%;"></div>
+					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
+				</div>
 			</div>
 		</div>
 		<div class="visual_con">
@@ -173,25 +181,25 @@
             <div class="visual_rightCon">
                 <div class="visual_rightCon_box">
                     <div>
-                        <h3>平均飞行速度(km/h)</h3>
+                        <h3>平均飞行速度</h3>
                         <p>10.0</p>
                     </div>
                 </div>
                 <div class="visual_rightCon_box">
                     <div>
-                        <h3>平均飞行时间(min)</h3>
+                        <h3>平均飞行时间</h3>
                         <p>10.0</p>
                     </div>
                 </div>
                 <div class="visual_rightCon_box">
                     <div>
-                        <h3>平均耗电(百分比)</h3>
+                        <h3>平均耗电</h3>
                         <p>10.0</p>
                     </div>
                 </div>
                 <div class="visual_rightCon_box">
                     <div>
-                        <h3>平均载货量(kg)</h3>
+                        <h3>平均载货量</h3>
                         <p>10.0</p>
                     </div>
                 </div>
@@ -202,7 +210,7 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div id="flight-records-list"></div>
-				<div id="flight-records-pagination"></div>
+				<div id="flight-records-pagination" style="font-size: 4px;"></div>
 			</div>
 		</div>
 		<div class="clear"></div>
@@ -249,35 +257,35 @@
 		
 		// ================== 飞行架次统计 ================== //
 		function updateFlightChart(type, stats) {
-			let xAxis = [];
-			let yAxis = [];
-			let total = 0;
-			if (type === 'year') {
-				xAxis = (stats.yearStats || []).map(item => item.date);
-				yAxis = (stats.yearStats || []).map(item => item.count);
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else if (type === 'month') {
-				xAxis = (stats.monthStats || []).map(item => item.date.slice(5)); // 取 MM 部分
-				yAxis = (stats.monthStats || []).map(item => item.count);
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else {
-				xAxis = (stats.dayStats || []).map(item => item.date.slice(5)); // 取 MM-DD 部分
-				yAxis = (stats.dayStats || []).map(item => item.count);
-			}
-			option1.xAxis = xAxis;
-			if (option1.series && option1.series.length > 0) {
-				option1.series[0].data = yAxis;
-			}
-			myChart1.setOption({
-				xAxis: { data: xAxis },
-				series: [{ data: yAxis }]
-			});
-			if (type == 'month' || type == 'year') {
-				$('#total-count-flight').text('总数：' + total).show();
-			} else {
-				$('#total-count-flight').hide();
-			}
-		}
+            let xAxis = [];
+            let yAxis = [];
+            let total = 0;
+            if (type === 'year') {
+                xAxis = (stats.yearStats || []).map(item => item.date);
+                yAxis = (stats.yearStats || []).map(item => item.count);
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else if (type === 'month') {
+                xAxis = (stats.monthStats || []).map(item => item.date.slice(5)); // 取 MM 部分
+                yAxis = (stats.monthStats || []).map(item => item.count);
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else {
+                // 只显示最近5天
+                const dayStats = (stats.dayStats || []);
+                const last5 = dayStats.slice(-5);
+                xAxis = last5.map(item => item.date.slice(5)); // 取 MM-DD 部分
+                yAxis = last5.map(item => item.count);
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            }
+            option1.xAxis = xAxis;
+            if (option1.series && option1.series.length > 0) {
+                option1.series[0].data = yAxis;
+            }
+            myChart1.setOption({
+                xAxis: { data: xAxis },
+                series: [{ data: yAxis }]
+            });
+            $('#total-count-flight').text('总数：' + total).show();
+        }
 
 		let cachedStats = null;
 		function loadRecordsTimeSeries(type = 'day') {
@@ -291,21 +299,27 @@
 			});
 		}
 
-		// 飞行架次统计按钮
-		$('#btn-year').click(function() {
-			$('#btn-year,#btn-month,#btn-day').removeClass('active');
-			$(this).addClass('active');
-			if (cachedStats) updateFlightChart('year', cachedStats);
+		// 飞行架次统计类型配置
+		const flightStatTypes = [
+			{ type: 'day', label: '日架次' },
+			{ type: 'month', label: '月架次' },
+			{ type: 'year', label: '年架次' }
+		];
+		let flightStatIndex = 0; // 默认日架次
+
+		function updateFlightStatType() {
+			$('#flight-stat-type').text(flightStatTypes[flightStatIndex].label);
+			if (cachedStats) updateFlightChart(flightStatTypes[flightStatIndex].type, cachedStats);
+		}
+
+		// 左右切换按钮事件
+		$('#main1-area .stat-switch-prev').click(function() {
+			flightStatIndex = (flightStatIndex + flightStatTypes.length - 1) % flightStatTypes.length;
+			updateFlightStatType();
 		});
-		$('#btn-month').click(function() {
-			$('#btn-year,#btn-month,#btn-day').removeClass('active');
-			$(this).addClass('active');
-			if (cachedStats) updateFlightChart('month', cachedStats);
-		});
-		$('#btn-day').click(function() {
-			$('#btn-year,#btn-month,#btn-day').removeClass('active');
-			$(this).addClass('active');
-			if (cachedStats) updateFlightChart('day', cachedStats);
+		$('#main1-area .stat-switch-next').click(function() {
+			flightStatIndex = (flightStatIndex + 1) % flightStatTypes.length;
+			updateFlightStatType();
 		});
 
 		// ================== 运输货量统计 ================== //
@@ -316,31 +330,31 @@
 		optionPayload.xAxis.data = [];
 
 		function updatePayloadChart(type, stats) {
-			let xAxis = [];
-			let yAxis = [];
-			let total = 0;
-			if (type === 'year') {
-				xAxis = (stats.yearStats || []).map(item => item.date);
-				yAxis = (stats.yearStats || []).map(item => item.payload.toFixed(2));
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else if (type === 'month') {
-				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.monthStats || []).map(item => item.payload.toFixed(2));
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else {
-				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.dayStats || []).map(item => item.payload.toFixed(2));
-			}
-			myChartPayload.setOption({
-				xAxis: { data: xAxis },
-				series: [{ name: '载货量', data: yAxis }]
-			});
-			if (type == 'month' || type == 'year') {
-				$('#total-count-payload').text('总数：' + total).show();
-			} else {
-				$('#total-count-payload').hide();
-			}
-		}
+            let xAxis = [];
+            let yAxis = [];
+            let total = 0;
+            if (type === 'year') {
+                xAxis = (stats.yearStats || []).map(item => item.date);
+                yAxis = (stats.yearStats || []).map(item => item.payload.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else if (type === 'month') {
+                xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
+                yAxis = (stats.monthStats || []).map(item => item.payload.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else {
+                // 只显示最近5天
+                const dayStats = (stats.dayStats || []);
+                const last5 = dayStats.slice(-5);
+                xAxis = last5.map(item => item.date.slice(5));
+                yAxis = last5.map(item => item.payload.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            }
+            myChartPayload.setOption({
+                xAxis: { data: xAxis },
+                series: [{ name: '载货量', data: yAxis }]
+            });
+            $('#total-count-payload').text('总数：' + total.toFixed(2)).show();
+        }
 
 		let cachedPayloadStats = null;
 		function loadPayloadStats(type = 'day') {
@@ -354,21 +368,24 @@
 			});
 		}
 
-		// 飞行耗电统计按钮
-		$('#btn-year-payload').click(function() {
-			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
-			$(this).addClass('active');
-			if (cachedPayloadStats) updatePayloadChart('year', cachedPayloadStats);
+		// 运输货量统计类型配置
+		const payloadStatTypes = [
+			{ type: 'day', label: '日货量' },
+			{ type: 'month', label: '月货量' },
+			{ type: 'year', label: '年货量' }
+		];
+		let payloadStatIndex = 0;
+		function updatePayloadStatType() {
+			$('#payload-stat-type').text(payloadStatTypes[payloadStatIndex].label);
+			if (cachedPayloadStats) updatePayloadChart(payloadStatTypes[payloadStatIndex].type, cachedPayloadStats);
+		}
+		$('#main_payload-area .stat-switch-prev').click(function() {
+			payloadStatIndex = (payloadStatIndex + payloadStatTypes.length - 1) % payloadStatTypes.length;
+			updatePayloadStatType();
 		});
-		$('#btn-month-payload').click(function() {
-			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
-			$(this).addClass('active');
-			if (cachedPayloadStats) updatePayloadChart('month', cachedPayloadStats);
-		});
-		$('#btn-day-payload').click(function() {
-			$('#btn-year-payload,#btn-month-payload,#btn-day-payload').removeClass('active');
-			$(this).addClass('active');
-			if (cachedPayloadStats) updatePayloadChart('day', cachedPayloadStats);
+		$('#main_payload-area .stat-switch-next').click(function() {
+			payloadStatIndex = (payloadStatIndex + 1) % payloadStatTypes.length;
+			updatePayloadStatType();
 		});
 
 		// ================== 飞行耗电统计 ================== //
@@ -379,31 +396,32 @@
 		optionSOC.xAxis.data = [];
 
 		function updateSOCChart(type, stats) {
-			let xAxis = [];
-			let yAxis = [];
-			let total = 0;
-			if (type === 'year') {
-				xAxis = (stats.yearStats || []).map(item => item.date);
-				yAxis = (stats.yearStats || []).map(item => item.usage.toFixed(2));
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else if (type === 'month') {
-				xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.monthStats || []).map(item => item.usage.toFixed(2));
-				total = yAxis.reduce((a, b) => a + b, 0);
-			} else {
-				xAxis = (stats.dayStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.dayStats || []).map(item => item.usage.toFixed(2));
-			}
-			myChartSOC.setOption({
-				xAxis: { data: xAxis },
-				series: [{ name: '耗电量', data: yAxis }]
-			});
-			if (type == 'month' || type == 'year') {
-				$('#total-count-soc').text('总数：' + total).show();
-			} else {
-				$('#total-count-soc').hide();
-			}
-		}
+            let xAxis = [];
+            let yAxis = [];
+            let total = 0;
+            if (type === 'year') {
+                xAxis = (stats.yearStats || []).map(item => item.date);
+                yAxis = (stats.yearStats || []).map(item => item.usage.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else if (type === 'month') {
+                xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
+                yAxis = (stats.monthStats || []).map(item => item.usage.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            } else {
+                // 只显示最近5天
+                const dayStats = (stats.dayStats || []);
+                const last5 = dayStats.slice(-5);
+                xAxis = last5.map(item => item.date.slice(5));
+                yAxis = last5.map(item => item.usage.toFixed(2));
+                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+            }
+            myChartSOC.setOption({
+                xAxis: { data: xAxis },
+                series: [{ name: '耗电量', data: yAxis }]
+            });
+            // 保留两位小数显示
+            $('#total-count-soc').text('总数：' + total.toFixed(2)).show();
+        }
 
 		let cachedSOCStats = null;
 		function loadSOCUsageStats(type = 'day') {
@@ -417,21 +435,24 @@
 			});
 		}
 
-		// 飞行耗电统计按钮
-		$('#btn-year-soc').click(function() {
-			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
-			$(this).addClass('active');
-			if (cachedSOCStats) updateSOCChart('year', cachedSOCStats);
+		// 飞行耗电统计类型配置
+		const socStatTypes = [
+			{ type: 'day', label: '日耗电' },
+			{ type: 'month', label: '月耗电' },
+			{ type: 'year', label: '年耗电' }
+		];
+		let socStatIndex = 0;
+		function updateSOCStatType() {
+			$('#soc-stat-type').text(socStatTypes[socStatIndex].label);
+			if (cachedSOCStats) updateSOCChart(socStatTypes[socStatIndex].type, cachedSOCStats);
+		}
+		$('#main_soc-area .stat-switch-prev').click(function() {
+			socStatIndex = (socStatIndex + socStatTypes.length - 1) % socStatTypes.length;
+			updateSOCStatType();
 		});
-		$('#btn-month-soc').click(function() {
-			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
-			$(this).addClass('active');
-			if (cachedSOCStats) updateSOCChart('month', cachedSOCStats);
-		});
-		$('#btn-day-soc').click(function() {
-			$('#btn-year-soc,#btn-month-soc,#btn-day-soc').removeClass('active');
-			$(this).addClass('active');
-			if (cachedSOCStats) updateSOCChart('day', cachedSOCStats);
+		$('#main_soc-area .stat-switch-next').click(function() {
+			socStatIndex = (socStatIndex + 1) % socStatTypes.length;
+			updateSOCStatType();
 		});
 
 		// ================== 平均统计 ================== //
@@ -441,13 +462,13 @@
 				type: "GET",
 				success: function(res) {
 					// 平均飞行速度(km/h)，后端单位为 m/s，前端需转为 km/h，保留两位小数
-					$('.visual_rightCon_box:eq(0) p').text((res.avgGS * 3.6).toFixed(2));
+					$('.visual_rightCon_box:eq(0) p').text((res.avgGS * 3.6).toFixed(2) + ' km/h');
 					// 平均飞行时间(min)，后端单位为秒，前端转为分钟，保留两位小数
-					$('.visual_rightCon_box:eq(1) p').text((res.avgFlightTime / 60).toFixed(2));
+					$('.visual_rightCon_box:eq(1) p').text((res.avgFlightTime / 60).toFixed(2) + ' min');
 					// 平均耗电(百分比)，保留两位小数
-					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(2));
+					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(2) + '%');
 					// 平均载货量(kg)，后端未提供，显示 "--"
-					$('.visual_rightCon_box:eq(3) p').text('--');
+					$('.visual_rightCon_box:eq(3) p').text('--kg');
 				},
 				error: function() {
 					$('.visual_rightCon_box:eq(0) p').text('--');
@@ -462,7 +483,7 @@
 		// 前端分页参数
 		let allFlightRecords = [];
 		let flightRecordsPage = 1;
-		let flightRecordsPageSize = 3;
+		let flightRecordsPageSize = 5;
 
 		// 渲染飞行记录列表（info-panel样式，倒序，前端分页）
 		function renderFlightRecords(records) {
@@ -579,9 +600,12 @@
 
 			loadFlightStats(); // 加载飞行架次、航程、飞行时长
 			loadOnlineCount(); // 加载当前架次
-			loadRecordsTimeSeries(); // 默认加载日统计
-			loadSOCUsageStats(); // 默认加载日统计
-			loadPayloadStats(); // 默认加载日统计
+			loadRecordsTimeSeries(); // 默认加载飞行架次统计日统计
+			updateFlightStatType();
+			loadSOCUsageStats(); // 默认加载飞行耗电统计日统计
+			updateSOCStatType();
+			loadPayloadStats(); // 默认加载运输货量统计日统计
+			updatePayloadStatType();
 			loadAvgStats(); // 加载平均统计
 			loadFlightRecords(); // 加载飞行记录
 
@@ -647,7 +671,7 @@
 					}
 				}
 				// 单位转为km，保留两位小数
-				let distArrKm = distArr.map(d => d.toFixed(2));
+				let distArrKm = distArr.map(d => (d / 1000).toFixed(2));
 				showAltitudeCurve(distArrKm, altArr, socArr);
 			});
 		});
@@ -671,7 +695,7 @@
 						let dist = xArr[idx] || '--';
 						let alt = yArr[idx] || '--';
 						let soc = socArr && socArr[idx] !== undefined ? socArr[idx] : '--';
-						return `距离：${dist} m<br/>高度：${alt} m<br/>电量：${soc} %`;
+						return `距离：${dist} km<br/>高度：${alt} m<br/>电量：${soc} %`;
 					},
 					backgroundColor: 'rgba(16,54,87,0.98)',
 					borderColor: '#20dbfd',
