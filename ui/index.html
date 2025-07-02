@@ -261,19 +261,19 @@
             let yAxis = [];
             let total = 0;
             if (type === 'year') {
-                xAxis = (stats.yearStats || []).map(item => item.date);
-                yAxis = (stats.yearStats || []).map(item => item.count);
+                xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
+                yAxis = (stats.yearStats || stats.YearStats || []).map(item => item.count || item.Count);
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             } else if (type === 'month') {
-                xAxis = (stats.monthStats || []).map(item => item.date.slice(5)); // 取 MM 部分
-                yAxis = (stats.monthStats || []).map(item => item.count);
+                xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
+                yAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.count || item.Count);
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             } else {
                 // 只显示最近5天
-                const dayStats = (stats.dayStats || []);
+                const dayStats = (stats.dayStats || stats.DayStats || []);
                 const last5 = dayStats.slice(-5);
                 xAxis = last5.map(item => item.date.slice(5)); // 取 MM-DD 部分
-                yAxis = last5.map(item => item.count);
+                yAxis = last5.map(item => item.count || item.Count);
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             }
             option1.xAxis = xAxis;
@@ -330,31 +330,38 @@
 		optionPayload.xAxis.data = [];
 
 		function updatePayloadChart(type, stats) {
-            let xAxis = [];
-            let yAxis = [];
-            let total = 0;
-            if (type === 'year') {
-                xAxis = (stats.yearStats || []).map(item => item.date);
-                yAxis = (stats.yearStats || []).map(item => item.payload.toFixed(2));
-                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-            } else if (type === 'month') {
-                xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
-                yAxis = (stats.monthStats || []).map(item => item.payload.toFixed(2));
-                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-            } else {
-                // 只显示最近5天
-                const dayStats = (stats.dayStats || []);
-                const last5 = dayStats.slice(-5);
-                xAxis = last5.map(item => item.date.slice(5));
-                yAxis = last5.map(item => item.payload.toFixed(2));
-                total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-            }
-            myChartPayload.setOption({
-                xAxis: { data: xAxis },
-                series: [{ name: '载货量', data: yAxis }]
-            });
-            $('#total-count-payload').text('总数：' + total.toFixed(2)).show();
-        }
+			let xAxis = [];
+			let yAxis = [];
+			let total = 0;
+			function parsePayload(val) {
+				// 兼容 undefined/null/0，且数据库存储为整数，需除以10
+				if (val === undefined || val === null) return 0;
+				let num = Number(val);
+				if (isNaN(num)) return 0;
+				return (num / 10).toFixed(1); // 保留1位小数
+			}
+			if (type === 'year') {
+				xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || stats.YearStats || []).map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.monthStats || stats.MonthStats || []).map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else {
+				// 只显示最近5天
+				const dayStats = (stats.dayStats || stats.DayStats || []);
+				const last5 = dayStats.slice(-5);
+				xAxis = last5.map(item => item.date.slice(5));
+				yAxis = last5.map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			}
+			myChartPayload.setOption({
+				xAxis: { data: xAxis },
+				series: [{ name: '载货量', data: yAxis }]
+			});
+			$('#total-count-payload').text('总数：' + total.toFixed(1)).show();
+		}
 
 		let cachedPayloadStats = null;
 		function loadPayloadStats(type = 'day') {
@@ -399,20 +406,26 @@
             let xAxis = [];
             let yAxis = [];
             let total = 0;
+            function parseUsage(val) {
+                if (val === undefined || val === null) return 0;
+                let num = Number(val);
+                if (!isFinite(num) || isNaN(num)) return 0;
+                return num.toFixed(1);
+            }
             if (type === 'year') {
-                xAxis = (stats.yearStats || []).map(item => item.date);
-                yAxis = (stats.yearStats || []).map(item => item.usage.toFixed(2));
+                xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
+                yAxis = (stats.yearStats || stats.YearStats || []).map(item => parseUsage(item.usage || item.Usage));
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             } else if (type === 'month') {
-                xAxis = (stats.monthStats || []).map(item => item.date.slice(5));
-                yAxis = (stats.monthStats || []).map(item => item.usage.toFixed(2));
+                xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
+                yAxis = (stats.monthStats || stats.MonthStats || []).map(item => parseUsage(item.usage || item.Usage));
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             } else {
                 // 只显示最近5天
-                const dayStats = (stats.dayStats || []);
+                const dayStats = (stats.dayStats || stats.DayStats || []);
                 const last5 = dayStats.slice(-5);
                 xAxis = last5.map(item => item.date.slice(5));
-                yAxis = last5.map(item => item.usage.toFixed(2));
+                yAxis = last5.map(item => parseUsage(item.usage || item.Usage));
                 total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
             }
             myChartSOC.setOption({
@@ -420,7 +433,7 @@
                 series: [{ name: '耗电量', data: yAxis }]
             });
             // 保留两位小数显示
-            $('#total-count-soc').text('总数：' + total.toFixed(2)).show();
+            $('#total-count-soc').text('总数：' + total.toFixed(1)).show();
         }
 
 		let cachedSOCStats = null;
@@ -503,8 +516,8 @@
 
 			pageData.forEach(function(rec) {
 				const html = `
-				<div class="record-panel" data-id="${rec.ID || rec.id}">
-					<p>编号: <span>${rec.UavId || rec.uav_id}</span></p>
+				<div class="record-panel" data-id="${rec.OrderID || rec.orderID}">
+					<p>编号: <span>${rec.OrderID || rec.orderID}</span></p>
 					<p>开始时间: <span>${rec.StartTime || rec.start_time}</span></p>
 				</div>`;
 				$list.append(html);
@@ -555,7 +568,7 @@
 				type: "POST",
 				headers: { 'Content-Type': 'application/json' },
 				data: JSON.stringify({
-					flightCode: "",
+					OrderID: "",
 					startTime: "",
 					endTime: ""
 				}),

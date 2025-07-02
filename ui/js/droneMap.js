@@ -324,23 +324,23 @@ window.addEventListener('load', function() {
             };
             
             // 检查是否是新的flightCode
-            if (data.flightCode && !this.flightCodeSet.has(data.flightCode)) {
+            if (data.orderID && !this.flightCodeSet.has(data.orderID)) {
                 // 清除之前所有的飞行路径，只保留当前正在执行的
                 this.clearAllPaths();
                 
                 // 添加新的flightCode到集合
-                this.flightCodeSet.add(data.flightCode);
+                this.flightCodeSet.add(data.orderID);
                 
                 // 初始化新的飞行路径数组
-                this.flightPaths.set(data.flightCode, []);
+                this.flightPaths.set(data.orderID, []);
                 
                 // 更新统计数据
                 this.updateStatsPanel();
             }
             
             // 添加当前位置到飞行路径
-            if (data.flightCode) {
-                const path = this.flightPaths.get(data.flightCode) || [];
+            if (data.orderID) {
+                const path = this.flightPaths.get(data.orderID) || [];
                 const newPoint = [droneData.longitude, droneData.latitude, droneData.altitude];
                 
                 // 检查是否有效点位，避免添加重复点或异常点
@@ -350,11 +350,11 @@ window.addEventListener('load', function() {
                     lastPoint[1] !== newPoint[1] ||
                     lastPoint[2] !== newPoint[2])) {
                     path.push(newPoint);
-                    this.flightPaths.set(data.flightCode, path);
+                    this.flightPaths.set(data.orderID, path);
                     
                     const color = this.getColorByRecordId(recordId);
-                    this.updateFlightPath(data.flightCode, path, color);   // 更新2D路径
-                    // this.updateFlightPath3D(data.flightCode, path);   // 更新3D路径
+                    this.updateFlightPath(data.orderID, path, color);   // 更新2D路径
+                    // this.updateFlightPath3D(data.orderID, path);   // 更新3D路径
                 }
             }
             
@@ -460,7 +460,7 @@ window.addEventListener('load', function() {
                 if (!data.track || data.track.length === 0) return;
                 const tracksByRecord = {};
                 data.track.forEach(pt => {
-                    const recordId = pt.flightCode;
+                    const recordId = pt.OrderID;
                     if (!tracksByRecord[recordId]) tracksByRecord[recordId] = [];
                     tracksByRecord[recordId].push({
                         lng: pt.longitude / 1e7,
@@ -523,7 +523,7 @@ window.addEventListener('load', function() {
             }, 2 * 60 * 1000);
 
             try {
-                const res = await fetch(`/record/recentTracks?id=${recordId}`);
+                const res = await fetch(`/record/recentTracks?orderID=${recordId}`);
                 const data = await res.json();
                 if (!data.track || data.track.length === 0) {
                     alert('该记录无轨迹数据');
@@ -704,9 +704,9 @@ window.addEventListener('load', function() {
         }
         
         updateInfoPanel(data) {
-            // 兼容 flightCode/id 字段
-            const uavId = data.id || data.flightCode || '--';
-            document.getElementById('panel-uav-id').textContent = uavId;
+            // 兼容 OrderID/id 字段
+            const orderID = data.OrderID || data.orderID || '--';
+            document.getElementById('panel-uav-id').textContent = orderID;
 
             // 日期格式化
             let dateStr = '--';
