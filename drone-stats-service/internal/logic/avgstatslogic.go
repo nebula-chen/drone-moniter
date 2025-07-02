@@ -24,13 +24,14 @@ func NewAvgStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AvgStats
 }
 
 func (l *AvgStatsLogic) AvgStats() (resp *types.AvgStatsResp, err error) {
-	avgTime, avgBattery, avgGS, err := l.svcCtx.MySQLDao.GetAvgStats()
+	avgTime, avgBattery, avgPayload, avgGS, err := l.svcCtx.MySQLDao.GetAvgStats()
 	if err != nil {
 		return nil, err
 	}
 	return &types.AvgStatsResp{
 		AvgFlightTime:  avgTime,
 		AvgBatteryUsed: avgBattery,
+		AvgPayload:     avgPayload,
 		AvgGS:          avgGS,
 	}, nil
 }
