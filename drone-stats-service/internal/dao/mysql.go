@@ -359,23 +359,27 @@ func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[stri
 	return
 }
 
-// 统计平均飞行时长（秒）、平均耗电量、平均速度
-func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64, err error) {
-	var avgTimeNull, avgSOCNull, avgGSNull sql.NullFloat64
+// 统计平均飞行时长（秒）、平均耗电量、平均载货量、平均速度
+func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgPayload float64, avgGS float64, err error) {
+	var avgTimeNull, avgSOCNull, avgPayloadNull, avgGSNull sql.NullFloat64
 	row := d.DB.QueryRow(`
         SELECT 
             AVG(TIMESTAMPDIFF(SECOND, start_time, end_time)) as avg_time,
             AVG(battery_used) as avg_battery,
+            AVG(CASE WHEN payload=0 OR payload IS NULL THEN NULL ELSE payload/10 END) as avg_payload,
             (SELECT AVG(gs/10) FROM flight_track_points WHERE gs IS NOT NULL) as avg_gs
         FROM flight_records
         WHERE end_time IS NOT NULL AND battery_used IS NOT NULL
     `)
-	err = row.Scan(&avgTimeNull, &avgSOCNull, &avgGSNull)
+	err = row.Scan(&avgTimeNull, &avgSOCNull, &avgPayloadNull, &avgGSNull)
 	if avgTimeNull.Valid {
 		avgTime = avgTimeNull.Float64
 	}
 	if avgSOCNull.Valid {
 		avgSOC = avgSOCNull.Float64
+	}
+	if avgPayloadNull.Valid {
+		avgPayload = avgPayloadNull.Float64
 	}
 	if avgGSNull.Valid {
 		avgGS = avgGSNull.Float64

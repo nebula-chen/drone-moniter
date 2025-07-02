@@ -215,6 +215,8 @@
 		</div>
 		<div class="clear"></div>
 	</div>
+
+
 	<script type="text/javascript">
 		// ================== 总架次、航程、时长统计 ================== //
 		function loadFlightStats() {
@@ -284,7 +286,7 @@
                 xAxis: { data: xAxis },
                 series: [{ data: yAxis }]
             });
-            $('#total-count-flight').text('总数：' + total + '架').show();
+            $('#total-count-flight').text('总数：' + total).show();
         }
 
 		let cachedStats = null;
@@ -360,7 +362,7 @@
                 series: [{ name: '耗电量', data: yAxis }]
             });
             // 保留两位小数显示
-            $('#total-count-soc').text('总数：' + total.toFixed(1) + 'A.h/km/kg').show();
+            $('#total-count-soc').text('总数：' + total.toFixed(1)).show();
         }
 
 		let cachedSOCStats = null;
@@ -433,7 +435,7 @@
 				xAxis: { data: xAxis },
 				series: [{ name: '载货量', data: yAxis }]
 			});
-			$('#total-count-payload').text('总数：' + total.toFixed(1) + 'kg').show();
+			$('#total-count-payload').text('总数：' + total.toFixed(1)).show();
 		}
 
 		let cachedPayloadStats = null;
@@ -498,7 +500,7 @@
 		let flightRecordsPage = 1;
 		let flightRecordsPageSize = 5;
 
-		// 渲染飞行记录列表（info-panel样式，倒序，前端分页）
+		// 渲染飞行记录列表（info-panel样式，前端分页）
 		function renderFlightRecords(records) {
 			const $list = $('#flight-records-list');
 			$list.empty();
@@ -507,12 +509,10 @@
 				$('#flight-records-pagination').empty();
 				return;
 			}
-			// 倒序
-			const reversed = records.slice().reverse();
 			// 分页
 			const startIdx = (flightRecordsPage - 1) * flightRecordsPageSize;
 			const endIdx = startIdx + flightRecordsPageSize;
-			const pageData = reversed.slice(startIdx, endIdx);
+			const pageData = records.slice(startIdx, endIdx);
 
 			pageData.forEach(function(rec) {
 				const html = `
