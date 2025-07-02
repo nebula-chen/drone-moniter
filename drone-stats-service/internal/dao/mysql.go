@@ -117,7 +117,7 @@ func (d *MySQLDao) FlightRecordExists(orderID string, startTime, endTime time.Ti
 
 // 查询飞行记录（支持条件筛选）
 func (d *MySQLDao) QueryFlightRecords(orderID, startTime, endTime string) ([]map[string]interface{}, error) {
-	query := `SELECT id, orderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
+	query := `SELECT id, OrderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
         FROM flight_records WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
@@ -253,7 +253,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
         SELECT DATE_FORMAT(start_time, '%Y') as date, 
         SUM(battery_used / 
             (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
         ) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
@@ -274,7 +274,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
         SELECT DATE_FORMAT(start_time, '%Y-%m') as date, 
         SUM(battery_used / 
             (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
         ) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
@@ -295,7 +295,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
         SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, 
         SUM(battery_used / 
             (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload END)
+            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
         ) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
@@ -316,7 +316,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 // 按年、月、日统计运输货量
 func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
 	// 年统计
-	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	rows, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y') as date, SUM(payload/10) as payload FROM flight_records GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
@@ -330,7 +330,7 @@ func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[stri
 	}
 
 	// 月统计
-	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	rows2, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m') as date, SUM(payload/10) as payload FROM flight_records GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
@@ -344,7 +344,7 @@ func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[stri
 	}
 
 	// 日统计
-	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, SUM(payload) as payload FROM flight_records GROUP BY date ORDER BY date`)
+	rows3, err := d.DB.Query(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, SUM(payload/10) as payload FROM flight_records GROUP BY date ORDER BY date`)
 	if err != nil {
 		return
 	}
@@ -366,7 +366,7 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64
         SELECT 
             AVG(TIMESTAMPDIFF(SECOND, start_time, end_time)) as avg_time,
             AVG(battery_used) as avg_battery,
-            (SELECT AVG(gs) FROM flight_track_points WHERE gs IS NOT NULL) as avg_gs
+            (SELECT AVG(gs/10) FROM flight_track_points WHERE gs IS NOT NULL) as avg_gs
         FROM flight_records
         WHERE end_time IS NOT NULL AND battery_used IS NOT NULL
     `)
