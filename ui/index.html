@@ -284,7 +284,7 @@
                 xAxis: { data: xAxis },
                 series: [{ data: yAxis }]
             });
-            $('#total-count-flight').text('总数：' + total).show();
+            $('#total-count-flight').text('总数：' + total + '架').show();
         }
 
 		let cachedStats = null;
@@ -320,79 +320,6 @@
 		$('#main1-area .stat-switch-next').click(function() {
 			flightStatIndex = (flightStatIndex + 1) % flightStatTypes.length;
 			updateFlightStatType();
-		});
-
-		// ================== 运输货量统计 ================== //
-		var optionPayload = JSON.parse(JSON.stringify(option1));
-		optionPayload.series[0].name = '载货量';
-		optionPayload.title.text = '';
-		optionPayload.series[0].data = [];
-		optionPayload.xAxis.data = [];
-
-		function updatePayloadChart(type, stats) {
-			let xAxis = [];
-			let yAxis = [];
-			let total = 0;
-			function parsePayload(val) {
-				// 兼容 undefined/null/0，且数据库存储为整数，需除以10
-				if (val === undefined || val === null) return 0;
-				let num = Number(val);
-				if (isNaN(num)) return 0;
-				return (num / 10).toFixed(1); // 保留1位小数
-			}
-			if (type === 'year') {
-				xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
-				yAxis = (stats.yearStats || stats.YearStats || []).map(item => parsePayload(item.payload || item.Payload));
-				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-			} else if (type === 'month') {
-				xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
-				yAxis = (stats.monthStats || stats.MonthStats || []).map(item => parsePayload(item.payload || item.Payload));
-				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-			} else {
-				// 只显示最近5天
-				const dayStats = (stats.dayStats || stats.DayStats || []);
-				const last5 = dayStats.slice(-5);
-				xAxis = last5.map(item => item.date.slice(5));
-				yAxis = last5.map(item => parsePayload(item.payload || item.Payload));
-				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
-			}
-			myChartPayload.setOption({
-				xAxis: { data: xAxis },
-				series: [{ name: '载货量', data: yAxis }]
-			});
-			$('#total-count-payload').text('总数：' + total.toFixed(1)).show();
-		}
-
-		let cachedPayloadStats = null;
-		function loadPayloadStats(type = 'day') {
-			$.ajax({
-				url: "/record/payloadStats",
-				type: "GET",
-				success: function(res) {
-					cachedPayloadStats = res;
-					updatePayloadChart(type, res);
-				}
-			});
-		}
-
-		// 运输货量统计类型配置
-		const payloadStatTypes = [
-			{ type: 'day', label: '日货量' },
-			{ type: 'month', label: '月货量' },
-			{ type: 'year', label: '年货量' }
-		];
-		let payloadStatIndex = 0;
-		function updatePayloadStatType() {
-			$('#payload-stat-type').text(payloadStatTypes[payloadStatIndex].label);
-			if (cachedPayloadStats) updatePayloadChart(payloadStatTypes[payloadStatIndex].type, cachedPayloadStats);
-		}
-		$('#main_payload-area .stat-switch-prev').click(function() {
-			payloadStatIndex = (payloadStatIndex + payloadStatTypes.length - 1) % payloadStatTypes.length;
-			updatePayloadStatType();
-		});
-		$('#main_payload-area .stat-switch-next').click(function() {
-			payloadStatIndex = (payloadStatIndex + 1) % payloadStatTypes.length;
-			updatePayloadStatType();
 		});
 
 		// ================== 飞行耗电统计 ================== //
@@ -433,7 +360,7 @@
                 series: [{ name: '耗电量', data: yAxis }]
             });
             // 保留两位小数显示
-            $('#total-count-soc').text('总数：' + total.toFixed(1)).show();
+            $('#total-count-soc').text('总数：' + total.toFixed(1) + 'A.h/km/kg').show();
         }
 
 		let cachedSOCStats = null;
@@ -466,6 +393,79 @@
 		$('#main_soc-area .stat-switch-next').click(function() {
 			socStatIndex = (socStatIndex + 1) % socStatTypes.length;
 			updateSOCStatType();
+		});
+
+		// ================== 运输货量统计 ================== //
+		var optionPayload = JSON.parse(JSON.stringify(option1));
+		optionPayload.series[0].name = '载货量';
+		optionPayload.title.text = '';
+		optionPayload.series[0].data = [];
+		optionPayload.xAxis.data = [];
+
+		function updatePayloadChart(type, stats) {
+			let xAxis = [];
+			let yAxis = [];
+			let total = 0;
+			function parsePayload(val) {
+				// 兼容 undefined/null/0，且数据库存储为整数，需除以10
+				if (val === undefined || val === null) return 0;
+				let num = Number(val);
+				if (isNaN(num)) return 0;
+				return (num / 10).toFixed(1); // 保留1位小数
+			}
+			if (type === 'year') {
+				xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || stats.YearStats || []).map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.monthStats || stats.MonthStats || []).map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else {
+				// 只显示最近5天
+				const dayStats = (stats.dayStats || stats.DayStats || []);
+				const last5 = dayStats.slice(-5);
+				xAxis = last5.map(item => item.date.slice(5));
+				yAxis = last5.map(item => parsePayload(item.payload || item.Payload));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			}
+			myChartPayload.setOption({
+				xAxis: { data: xAxis },
+				series: [{ name: '载货量', data: yAxis }]
+			});
+			$('#total-count-payload').text('总数：' + total.toFixed(1) + 'kg').show();
+		}
+
+		let cachedPayloadStats = null;
+		function loadPayloadStats(type = 'day') {
+			$.ajax({
+				url: "/record/payloadStats",
+				type: "GET",
+				success: function(res) {
+					cachedPayloadStats = res;
+					updatePayloadChart(type, res);
+				}
+			});
+		}
+
+		// 运输货量统计类型配置
+		const payloadStatTypes = [
+			{ type: 'day', label: '日货量' },
+			{ type: 'month', label: '月货量' },
+			{ type: 'year', label: '年货量' }
+		];
+		let payloadStatIndex = 0;
+		function updatePayloadStatType() {
+			$('#payload-stat-type').text(payloadStatTypes[payloadStatIndex].label);
+			if (cachedPayloadStats) updatePayloadChart(payloadStatTypes[payloadStatIndex].type, cachedPayloadStats);
+		}
+		$('#main_payload-area .stat-switch-prev').click(function() {
+			payloadStatIndex = (payloadStatIndex + payloadStatTypes.length - 1) % payloadStatTypes.length;
+			updatePayloadStatType();
+		});
+		$('#main_payload-area .stat-switch-next').click(function() {
+			payloadStatIndex = (payloadStatIndex + 1) % payloadStatTypes.length;
+			updatePayloadStatType();
 		});
 
 		// ================== 平均统计 ================== //
@@ -517,7 +517,7 @@
 			pageData.forEach(function(rec) {
 				const html = `
 				<div class="record-panel" data-id="${rec.OrderID || rec.orderID}">
-					<p>编号: <span>${rec.OrderID || rec.orderID}</span></p>
+					<p>编号: <span>${(rec.OrderID || rec.orderID).slice(-8)}</span></p>
 					<p>开始时间: <span>${rec.StartTime || rec.start_time}</span></p>
 				</div>`;
 				$list.append(html);
@@ -667,11 +667,11 @@
 				// 计算累计距离
 				let distArr = [0];
 				let altArr = [];
-				let socArr = [];
+				let RMArr = [];
 				for (let i = 0; i < points.length; i++) {
 					let pt = points[i];
-					altArr.push(pt.Altitude || pt.altitude || 0);
-					socArr.push(pt.SOC !== undefined ? pt.SOC : (pt.soc !== undefined ? pt.soc : '--'));
+					altArr.push((pt.Altitude || pt.altitude || 0) / 10);
+					RMArr.push(pt.RM !== undefined ? pt.RM : (pt.rm !== undefined ? pt.rm : '--'));
 					if (i > 0) {
 						let prev = points[i-1];
 						let d = calcDistance(
@@ -685,7 +685,7 @@
 				}
 				// 单位转为km，保留两位小数
 				let distArrKm = distArr.map(d => (d / 1000).toFixed(2));
-				showAltitudeCurve(distArrKm, altArr, socArr);
+				showAltitudeCurve(distArrKm, altArr, RMArr);
 			});
 		});
 
@@ -695,7 +695,7 @@
 		});
 
 		// 绘制曲线
-		function showAltitudeCurve(xArr, yArr, socArr) {
+		function showAltitudeCurve(xArr, yArr, RMArr) {
 			let chartDom = document.getElementById('altitude-curve-echart');
 			let myChart = echarts.init(chartDom);
 			let option = {
@@ -707,8 +707,8 @@
 						let idx = params[0].dataIndex;
 						let dist = xArr[idx] || '--';
 						let alt = yArr[idx] || '--';
-						let soc = socArr && socArr[idx] !== undefined ? socArr[idx] : '--';
-						return `距离：${dist} km<br/>高度：${alt} m<br/>电量：${soc} %`;
+						let RM = RMArr && RMArr[idx] !== undefined ? RMArr[idx] : '--';
+						return `距离：${dist} km<br/>海拔：${alt} m<br/>电量：${RM} A.h`;
 					},
 					backgroundColor: 'rgba(16,54,87,0.98)',
 					borderColor: '#20dbfd',
@@ -718,6 +718,8 @@
 				xAxis: {
 					type: 'category',
 					name: '飞行距离(m)',
+					nameLocation: 'middle', // 横坐标标题居中
+					nameGap: 30,            // 标题与轴线的距离
 					data: xArr,
 					axisLabel: { color: '#fff' },
 					nameTextStyle: { color: '#fff' },
@@ -725,7 +727,7 @@
 				},
 				yAxis: {
 					type: 'value',
-					name: '高度(m)',
+					name: '海拔(m)',
 					axisLabel: { color: '#fff' },
 					nameTextStyle: { color: '#fff' },
 					axisLine: { lineStyle: { color: '#fff' } },
