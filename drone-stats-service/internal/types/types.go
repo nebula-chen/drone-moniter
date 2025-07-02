@@ -6,6 +6,7 @@ package types
 type AvgStatsResp struct {
 	AvgFlightTime  float64 `json:"avgFlightTime"`  // 单位：秒
 	AvgBatteryUsed float64 `json:"avgBatteryUsed"` // 单位：百分比
+	AvgPayload     float64 `json:"avgPayload"`
 	AvgGS          float64 `json:"avgGS"`
 }
 

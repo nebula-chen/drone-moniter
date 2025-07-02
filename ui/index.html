@@ -481,9 +481,9 @@
 					// 平均飞行时间(min)，后端单位为秒，前端转为分钟，保留两位小数
 					$('.visual_rightCon_box:eq(1) p').text((res.avgFlightTime / 60).toFixed(2) + ' min');
 					// 平均耗电(百分比)，保留两位小数
-					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(2) + '%');
+					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(1) + 'A.h');
 					// 平均载货量(kg)，后端未提供，显示 "--"
-					$('.visual_rightCon_box:eq(3) p').text('--kg');
+					$('.visual_rightCon_box:eq(3) p').text(res.avgPayload.toFixed(1) + 'kg');
 				},
 				error: function() {
 					$('.visual_rightCon_box:eq(0) p').text('--');
