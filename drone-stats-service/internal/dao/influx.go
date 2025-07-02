@@ -27,8 +27,8 @@ func (d *InfluxDao) QueryFlightRecords(orderID string, start, end time.Time) ([]
 		from(bucket:"drone_data")
 		|> range(start: %s, stop: %s)
 		|> filter(fn: (r) => r["_measurement"] == "drone_status")
-		|> filter(fn: (r) => r["_field"] == "%s")
 		|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+		|> filter(fn: (r) => r["orderID"] == "%s")
 		`, start.Format(time.RFC3339), end.Format(time.RFC3339), orderID,
 	)
 
@@ -48,11 +48,12 @@ func (d *InfluxDao) QueryFlightRecords(orderID string, start, end time.Time) ([]
 // 查询所有无人机ID及首次出现时间
 func (d *InfluxDao) GetAllUasIDsAndFirstSeen() (map[string]time.Time, error) {
 	query := `
-        import "influxdata/influxdb/schema"
-        schema.tagValues(
-            bucket: "drone_data",
-            tag: "orderID"
-        )
+        from(bucket:"drone_data")
+        |> range(start: 0)
+        |> filter(fn: (r) => r._measurement == "drone_status")
+        |> filter(fn: (r) => r._field == "orderID")
+        |> keep(columns: ["_time", "_value"])
+        |> sort(columns: ["_time"], desc: false)
     `
 	result, err := d.QueryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -64,24 +65,13 @@ func (d *InfluxDao) GetAllUasIDsAndFirstSeen() (map[string]time.Time, error) {
 		if !ok {
 			continue
 		}
-		// 查询该id的最早时间
-		timeQuery := fmt.Sprintf(`
-            from(bucket:"drone_data")
-            |> range(start: 0)
-            |> filter(fn: (r) => r["_measurement"] == "drone_status")
-            |> filter(fn: (r) => r["_field"] == "%s")
-            |> keep(columns: ["_time"])
-            |> sort(columns: ["_time"], desc: false)
-            |> limit(n:1)
-        `, id)
-		timeResult, err := d.QueryAPI.Query(context.Background(), timeQuery)
-		if err != nil {
+		t, ok := result.Record().ValueByKey("_time").(time.Time)
+		if !ok {
 			continue
 		}
-		if timeResult.Next() {
-			if t, ok := timeResult.Record().ValueByKey("_time").(time.Time); ok {
-				ids[id] = t
-			}
+		// 只保留最早时间
+		if _, exists := ids[id]; !exists {
+			ids[id] = t
 		}
 	}
 	return ids, nil
