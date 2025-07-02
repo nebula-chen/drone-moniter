@@ -412,10 +412,10 @@ html, body, form{overflow-y:auto;height:100%;}
 
 /* 曲线Echarts容器，居中显示，尺寸固定 */
 #altitude-curve-echart {
-    width: 600px;
-    height: 340px;
+    width: 72%;
+    height: 72%;
     position: absolute;
-    left: 50%; top: 50%;
+    left: 50%; top: 48%;
     transform: translate(-50%, -50%);
     background: transparent;
 }

@@ -520,7 +520,7 @@ window.addEventListener('load', function() {
             // 2分钟后自动恢复轮播
             this._autoResumeTimer = setTimeout(() => {
                 this.showRecentTracksAnimated();
-            }, 2 * 60 * 1000);
+            }, 1 * 60 * 1000);
 
             try {
                 const res = await fetch(`/record/recentTracks?orderID=${recordId}`);
@@ -706,7 +706,7 @@ window.addEventListener('load', function() {
         updateInfoPanel(data) {
             // 兼容 OrderID/id 字段
             const orderID = data.OrderID || data.orderID || '--';
-            document.getElementById('panel-uav-id').textContent = orderID;
+            document.getElementById('panel-uav-id').textContent = orderID.slice(-8);
 
             // 日期格式化
             let dateStr = '--';
@@ -721,10 +721,7 @@ window.addEventListener('load', function() {
                 if (d && !isNaN(d.getTime())) {
                     dateStr = d.getFullYear() + '-' +
                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                        String(d.getDate()).padStart(2, '0') + ' ' +
-                        String(d.getHours()).padStart(2, '0') + ':' +
-                        String(d.getMinutes()).padStart(2, '0') + ':' +
-                        String(d.getSeconds()).padStart(2, '0');
+                        String(d.getDate()).padStart(2, '0');
                 }
             }
             document.getElementById('panel-date').textContent = dateStr;
