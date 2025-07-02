@@ -38,7 +38,7 @@ func main() {
 
 	// 启动定时任务
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute) // 每15秒拉取一次
+		ticker := time.NewTicker(5 * time.Minute) // 每5分钟拉取一次
 		defer ticker.Stop()
 		fmt.Println("开始拉取数据...")
 		for {
@@ -48,7 +48,7 @@ func main() {
 	}()
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
-	processAllUasData(ctx)
+	// processAllUasData(ctx)
 	server.Start()
 }
 
@@ -66,8 +66,8 @@ func processAllUasData(ctx *svc.ServiceContext) {
 
 		// 拉取该无人机近一段时间的飞行数据并处理
 		end := time.Now().UTC()
-		start := time.Date(2025, 6, 19, 11, 0, 0, 0, time.UTC) // 从25年6月19号19点整开始拉取数据（丰翼数据上报接口当天19:20发布生产环境）
-		// start := end.Add(-1 * time.Hour) // 只拉取最近1小时
+		// start := time.Date(2025, 6, 19, 11, 0, 0, 0, time.UTC) // 从25年6月19号19点整开始拉取数据（丰翼数据上报接口当天19:20发布生产环境）
+		start := end.Add(-1 * time.Hour) // 只拉取最近1小时
 
 		// 复用已有逻辑
 		req := &types.FlightRecordReq{
