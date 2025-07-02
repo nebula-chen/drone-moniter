@@ -59,10 +59,10 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	if len(points) == 0 {
 		return nil
 	}
-	query := "INSERT INTO flight_track_points (orderID, flight_status, time_stamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity) VALUES "
+	query := "INSERT INTO flight_track_points (orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity) VALUES "
 	vals := []interface{}{}
 	for _, tp := range points {
-		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
+		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
 		vals = append(vals,
 			tp.OrderID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
 			tp.Longitude, tp.Latitude, tp.HeightType, tp.Height, tp.Altitude, tp.VS, tp.GS, tp.Course, tp.SOC, tp.RM, tp.WindSpeed, tp.WindDirect, tp.Temperture, tp.Humidity)
@@ -94,12 +94,12 @@ func (d *MySQLDao) CountOnlineSorties() (int, error) {
 // 注册新架次
 func (d *MySQLDao) RegisterSortiesIfNotExist(orderID string, regTime time.Time) error {
 	var exists int
-	err := d.DB.QueryRow("SELECT COUNT(*) FROM flight_sorties WHERE orderID=?", orderID).Scan(&exists)
+	err := d.DB.QueryRow("SELECT COUNT(*) FROM flight_sorties WHERE OrderID=?", orderID).Scan(&exists)
 	if err != nil {
 		return err
 	}
 	if exists == 0 {
-		_, err := d.DB.Exec("INSERT INTO flight_sorties (orderID, register_time, status) VALUES (?, ?, ?)", orderID, regTime, 0)
+		_, err := d.DB.Exec("INSERT INTO flight_sorties (OrderID, register_time) VALUES (?, ?)", orderID, regTime)
 		return err
 	}
 	return nil
@@ -386,10 +386,10 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgGS float64
 // 查询某条飞行记录的所有轨迹点
 func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interface{}, error) {
 	rows, err := d.DB.Query(`
-        SELECT id, orderID, flight_status, time_stamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity
+        SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity
         FROM flight_track_points
         WHERE orderID = ?
-        ORDER BY time_stamp ASC
+        ORDER BY timeStamp ASC
     `, orderID)
 	if err != nil {
 		return nil, err
