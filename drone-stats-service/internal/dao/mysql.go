@@ -24,10 +24,11 @@ func NewMySQLDao(dsn string) (*MySQLDao, error) {
 }
 
 // 保存飞行记录
-func (d *MySQLDao) SaveFlightRecord(orderID string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance float64, batteryUsed int) error {
+func (d *MySQLDao) SaveFlightRecord(orderID, uasID string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance float64, batteryUsed int) error {
 	_, err := d.DB.Exec(
 		`INSERT INTO flight_records (
 			orderID,
+			uasID,
 			start_time,
 			end_time,
 			start_lat,
@@ -35,18 +36,18 @@ func (d *MySQLDao) SaveFlightRecord(orderID string, startTime, endTime time.Time
 			end_lat,
 			end_lng,
 			distance,
-			battery_used,
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		orderID, startTime, endTime, start_lat, start_lng, end_lat, end_lng, distance, batteryUsed)
+			battery_used
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		orderID, uasID, startTime, endTime, start_lat, start_lng, end_lat, end_lng, distance, batteryUsed)
 	return err
 }
 
 // 保存主表并返回orderID（飞行架次唯一编号）
 func (d *MySQLDao) SaveFlightRecordAndGetOrderID(fr model.FlightRecord) (string, error) {
 	_, err := d.DB.Exec(`INSERT INTO flight_records 
-		(orderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, payload) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		fr.OrderID, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed, fr.Payload)
+		(orderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, payload) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		fr.OrderID, fr.UasID, fr.StartTime, fr.EndTime, fr.StartLat, fr.StartLng, fr.EndLat, fr.EndLng, fr.Distance, fr.BatteryUsed, fr.Payload)
 	if err != nil {
 		fmt.Println("MySQL主表写入错误:", err)
 		return "", err
@@ -117,7 +118,7 @@ func (d *MySQLDao) FlightRecordExists(orderID string, startTime, endTime time.Ti
 
 // 查询飞行记录（支持条件筛选）
 func (d *MySQLDao) QueryFlightRecords(orderID, startTime, endTime string) ([]map[string]interface{}, error) {
-	query := `SELECT id, OrderID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
+	query := `SELECT id, OrderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
         FROM flight_records WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
@@ -142,18 +143,19 @@ func (d *MySQLDao) QueryFlightRecords(orderID, startTime, endTime string) ([]map
 	for rows.Next() {
 		var (
 			id, batteryUsed                    int
-			orderID                            string
+			orderID, uasID                     string
 			startTime, endTime, createdAt      sql.NullTime
 			startLat, startLng, endLat, endLng sql.NullInt64
 			distance                           sql.NullFloat64
 		)
-		err := rows.Scan(&id, &orderID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt)
+		err := rows.Scan(&id, &orderID, &uasID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt)
 		if err != nil {
 			continue
 		}
 		record := map[string]interface{}{
 			"id":           id,
 			"OrderID":      orderID,
+			"uasID":        uasID,
 			"start_time":   startTime.Time.Format("2006-01-02 15:04:05"),
 			"end_time":     endTime.Time.Format("2006-01-02 15:04:05"),
 			"start_lat":    startLat.Int64,

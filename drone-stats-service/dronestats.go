@@ -101,6 +101,7 @@ func autoMigrate(db *sql.DB) error {
     CREATE TABLE IF NOT EXISTS flight_records (
         id INT AUTO_INCREMENT PRIMARY KEY,
         OrderID VARCHAR(128) NOT NULL,
+		uasID VARCHAR(128) NOT NULL,
         start_time DATETIME NOT NULL,
         end_time DATETIME,
         start_lat BIGINT,
