@@ -98,6 +98,16 @@ type AvgStatsResp {
 	AvgGS          float64 `json:"avgGS"`
 }
 
+type UpdatePayloadReq {
+	OrderID string `json:"OrderID"`
+	Payload int    `json:"payload"`
+}
+
+type UpdatePayloadResp {
+	Code     int    `json:"code"`
+	ErrorMsg string `json:"errorMsg, omitempty"`
+}
+
 service droneStats {
 	@handler GetFlightRecords
 	post /record/get (FlightRecordReq) returns (TrackResponse)
@@ -128,5 +138,8 @@ service droneStats {
 
 	@handler RecentTracks
 	get /record/recentTracks returns (TrackResponse)
+
+	@handler UpdatePayload
+	post /record/updatePayload (UpdatePayloadReq) returns (UpdatePayloadResp)
 }
 

@@ -436,3 +436,9 @@ func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interf
 	}
 	return points, nil
 }
+
+// 更新指定架次的载货量
+func (d *MySQLDao) UpdateFlightPayload(orderID string, payload int) error {
+	_, err := d.DB.Exec("UPDATE flight_records SET payload=? WHERE orderID=?", payload, orderID)
+	return err
+}

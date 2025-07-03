@@ -413,7 +413,7 @@
 				if (val === undefined || val === null) return 0;
 				let num = Number(val);
 				if (isNaN(num)) return 0;
-				return (num / 10).toFixed(1); // 保留1位小数
+				return num.toFixed(1); // 保留1位小数
 			}
 			if (type === 'year') {
 				xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);

@@ -465,7 +465,7 @@ window.addEventListener('load', function() {
                     tracksByRecord[recordId].push({
                         lng: pt.longitude / 1e7,
                         lat: pt.latitude / 1e7,
-                        alt: pt.altitude,
+                        alt: pt.altitude / 10,
                         flightStatus: pt.flightStatus,
                         ...pt
                     });
@@ -533,7 +533,7 @@ window.addEventListener('load', function() {
                 const points = data.track.map(pt => ({
                     lng: pt.longitude / 1e7,
                     lat: pt.latitude / 1e7,
-                    alt: pt.altitude,
+                    alt: pt.altitude / 10,
                     ...pt
                 }));
                 const color = this.getColorByRecordId(recordId);
@@ -729,7 +729,7 @@ window.addEventListener('load', function() {
             document.getElementById('panel-soc').textContent = (data.SOC !== undefined ? data.SOC + '%' : '--');
             document.getElementById('panel-payload').textContent = (data.payload !== undefined ? data.payload : '--');
             document.getElementById('panel-wind-dir').textContent = (data.windDirect !== undefined ? data.windDirect : '--');
-            document.getElementById('panel-wind-speed').textContent = (data.windSpeed !== undefined ? data.windSpeed : '--');
+            document.getElementById('panel-wind-speed').textContent = (data.windSpeed !== undefined ? (data.windSpeed / 10).toFixed(1) + "m/s" : '--');
         }
         
         // 清理方法，用于关闭WebSocket连接和清理资源

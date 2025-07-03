@@ -101,3 +101,13 @@ type UasStatsResp struct {
 	Total  int `json:"total"`
 	Online int `json:"online"`
 }
+
+type UpdatePayloadReq struct {
+	OrderID string `json:"OrderID"`
+	Payload int    `json:"payload"`
+}
+
+type UpdatePayloadResp struct {
+	Code     int    `json:"code"`
+	ErrorMsg string `json:"errorMsg, omitempty"`
+}

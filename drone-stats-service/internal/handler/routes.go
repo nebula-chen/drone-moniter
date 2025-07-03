@@ -64,6 +64,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/record/uas",
 				Handler: GetUasStatsHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/record/updatePayload",
+				Handler: UpdatePayloadHandler(serverCtx),
+			},
 		},
 	)
 }
