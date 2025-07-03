@@ -5,6 +5,7 @@ import "time"
 type FlightRecord struct {
 	ID          int       `db:"id"`
 	OrderID     string    `db:"orderID"`
+	UasID       string    `db:"uasID"` // 对应无人机编号，UAS04028624 == 5197, UAS04143500 == 5210, UAS04028648 == 5203
 	StartTime   time.Time `db:"start_time"`
 	EndTime     time.Time `db:"end_time"`
 	StartLat    int64     `db:"start_lat"`

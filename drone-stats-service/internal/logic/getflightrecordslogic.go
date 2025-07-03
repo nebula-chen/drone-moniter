@@ -124,6 +124,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	// 存储到flight_records主表，注意经纬度/高度转换
 	fr := model.FlightRecord{
 		OrderID:     req.OrderID,
+		UasID:       getString(startPoint, "uasID"), // 新增，确保从influx数据中获取uasID
 		StartTime:   startPoint["_time"].(time.Time),
 		EndTime:     endPoint["_time"].(time.Time),
 		StartLat:    getInt64(startPoint, "latitude"),
@@ -132,7 +133,7 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		EndLng:      getInt64(endPoint, "longitude"),
 		Distance:    totalDistance,
 		BatteryUsed: int(startRM - endRM),
-		Payload:     getFloat64(endPoint, "payload"), // 新增
+		Payload:     getFloat64(endPoint, "payload"),
 	}
 
 	// 新增：插入前判断是否已存在

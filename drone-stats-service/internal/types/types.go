@@ -17,15 +17,16 @@ type DateCount struct {
 
 type FlightRecord struct {
 	ID          int     `json:"id"`
-	OrderID     string  `json:"OrderID"`
-	StartTime   string  `json:"start_time"`
-	EndTime     string  `json:"end_time"`
-	StartLat    int64   `json:"start_lat"`
-	StartLng    int64   `json:"start_lng"`
-	EndLat      int64   `json:"end_lat"`
-	EndLng      int64   `json:"end_lng"`
-	Distance    float64 `json:"distance"`
-	BatteryUsed int     `json:"battery_used"`
+	OrderID     string  `json:"OrderID"`      // 架次编号：厂商的无人机生产序列号（sn）－8位起飞日期（YYYYMMDD）－8 位随机码（数字或字母均可）如：1581F5FHD25G100C1SDN-20240320-owvGyLqe
+	UasID       string  `json:"uasID"`        // 对应无人机编号，UAS04028624 == 5197, UAS04143500 == 5210, UAS04028648 == 5203
+	StartTime   string  `json:"start_time"`   // 起飞时间，格式"yyyyMMddHHmmss"，例：2024012409500
+	EndTime     string  `json:"end_time"`     // 降落时间
+	StartLat    int64   `json:"start_lat"`    // 起飞纬度，单位：度（°）精确到小数点后 7 位，乘 10 的 7 次方后传输
+	StartLng    int64   `json:"start_lng"`    // 起飞经度
+	EndLat      int64   `json:"end_lat"`      // 降落纬度
+	EndLng      int64   `json:"end_lng"`      // 降落经度
+	Distance    float64 `json:"distance"`     // 飞行距离，单位：米（m）
+	BatteryUsed int     `json:"battery_used"` // 耗电量，单位：安时（A.h）
 	CreatedAt   string  `json:"created_at"`
 }
 
@@ -74,23 +75,23 @@ type TimeSeriesStatsResp struct {
 }
 
 type TrackPoints struct {
-	OrderID      string `json:"orderID"`             // 架次编号：厂商的无人机生产序列号（sn）－8位起飞日期（YYYYMMDD）－8 位随机码（数字或字母均可）如：1581F5FHD25G100C1SDN-20240320-owvGyLqe
-	FlightStatus string `json:"flightStatus"`        // TakeOff：代表当前架次飞行的首个轨迹点 Inflight：代表当前架次飞行中除首尾以外的其它轨迹点 Land：代表当前架次飞行的最后一个轨迹点
-	TimeStamp    string `json:"timeStamp"`           // 格式"yyyyMMddHHmmss"，例：2024012409500
-	Longitude    int64  `json:"longitude"`           // 单位：度（°）精确到小数点后 7 位，乘 10 的 7 次方后传输
-	Latitude     int64  `json:"latitude"`            // 单位：度（°）精确到小数点后 7 位，乘 10 的 7 次方后传输
-	HeightType   int    `json:"heightType"`          // 1.相对于起飞点的真高 2.相对于当前位置的真高
-	Height       int    `json:"height"`              // 单位：米（m）精确到小数点后 1 位，乘 10 以后传输
-	Altitude     int    `json:"altitude"`            // 单位：米（m）精确到小数点后 1 位，乘 10 以后传输
-	VS           int    `json:"VS"`                  // 单位：米每秒（m/s）精确到小数点后 1 位，乘 10 后传输
-	GS           int    `json:"GS"`                  // 单位：米每秒（m/s）精确到小数点后 1 位，乘 10 后传输
-	Course       int    `json:"course"`              // 无人驾驶航空器当前时刻所在位置真北方向顺时针量至地速方向的夹角，范围（0 度，360 度］。暂不具备航迹角测算能力的型号产品，应报送默认值 999.0”精确到小数点后 1位，乘 10 后传输
-	SOC          int    `json:"SOC"`                 // 电池电量百分比，最大为 100 代表100%，若无电量数据则传输 0（如使用非智能电池）
-	RM           int    `json:"RM"`                  // 电池电量信息，单位 A.h，正整数传输，若无电量数据传输 0（如使用非智能电池）
-	WindSpeed    int    `json:"windSpeed,optional"`  // 风速，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
-	WindDirect   int    `json:"windDirect,optional"` // 风向，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
-	Temperture   int    `json:"temperture,optional"` // 温度值，单位：℃，整数
-	Humidity     int    `json:"humidity,optional"`   // 湿度值，百分比，0-100 整数
+	OrderID      string `json:"orderID"`      // 架次编号：厂商的无人机生产序列号（sn）－8位起飞日期（YYYYMMDD）－8 位随机码（数字或字母均可）如：1581F5FHD25G100C1SDN-20240320-owvGyLqe
+	FlightStatus string `json:"flightStatus"` // TakeOff：代表当前架次飞行的首个轨迹点 Inflight：代表当前架次飞行中除首尾以外的其它轨迹点 Land：代表当前架次飞行的最后一个轨迹点
+	TimeStamp    string `json:"timeStamp"`    // 格式"yyyyMMddHHmmss"，例：2024012409500
+	Longitude    int64  `json:"longitude"`    // 单位：度（°）精确到小数点后 7 位，乘 10 的 7 次方后传输
+	Latitude     int64  `json:"latitude"`     // 单位：度（°）精确到小数点后 7 位，乘 10 的 7 次方后传输
+	HeightType   int    `json:"heightType"`   // 1.相对于起飞点的真高 2.相对于当前位置的真高
+	Height       int    `json:"height"`       // 单位：米（m）精确到小数点后 1 位，乘 10 以后传输
+	Altitude     int    `json:"altitude"`     // 单位：米（m）精确到小数点后 1 位，乘 10 以后传输
+	VS           int    `json:"VS"`           // 单位：米每秒（m/s）精确到小数点后 1 位，乘 10 后传输
+	GS           int    `json:"GS"`           // 单位：米每秒（m/s）精确到小数点后 1 位，乘 10 后传输
+	Course       int    `json:"course"`       // 无人驾驶航空器当前时刻所在位置真北方向顺时针量至地速方向的夹角，范围（0 度，360 度］。暂不具备航迹角测算能力的型号产品，应报送默认值 999.0”精确到小数点后 1位，乘 10 后传输
+	SOC          int    `json:"SOC"`          // 电池电量百分比，最大为 100 代表100%，若无电量数据则传输 0（如使用非智能电池）
+	RM           int    `json:"RM"`           // 电池电量信息，单位 A.h，正整数传输，若无电量数据传输 0（如使用非智能电池）
+	WindSpeed    int    `json:"windSpeed"`    // 风速，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
+	WindDirect   int    `json:"windDirect"`   // 风向，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
+	Temperture   int    `json:"temperture"`   // 温度值，单位：℃，整数
+	Humidity     int    `json:"humidity"`     // 湿度值，百分比，0-100 整数
 }
 
 type TrackResponse struct {
@@ -109,5 +110,5 @@ type UpdatePayloadReq struct {
 
 type UpdatePayloadResp struct {
 	Code     int    `json:"code"`
-	ErrorMsg string `json:"errorMsg, omitempty"`
+	ErrorMsg string `json:"errorMsg"`
 }

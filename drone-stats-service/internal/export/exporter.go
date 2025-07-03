@@ -20,6 +20,7 @@ func ExportFlightRecordsToCSV(records []types.FlightRecord, filename string) err
 		writer.Write([]string{
 			fmt.Sprintf("%d", r.ID),
 			r.OrderID,
+			r.UasID,
 			r.StartTime,
 			r.EndTime,
 			fmt.Sprintf("%d", r.StartLng),

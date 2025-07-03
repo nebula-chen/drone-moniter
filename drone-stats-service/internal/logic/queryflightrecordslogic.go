@@ -34,6 +34,7 @@ func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq)
 		resp.Flightrecords = append(resp.Flightrecords, types.FlightRecord{
 			ID:          r["id"].(int),
 			OrderID:     r["OrderID"].(string),
+			UasID:       r["uasID"].(string), // 新增
 			StartTime:   r["start_time"].(string),
 			EndTime:     r["end_time"].(string),
 			StartLat:    r["start_lat"].(int64),
