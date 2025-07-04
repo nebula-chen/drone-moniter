@@ -11,9 +11,10 @@ import (
 func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.URL.Query().Get("OrderID")
+		uasID := r.URL.Query().Get("uasID") // 新增uasID参数
 		startTime := r.URL.Query().Get("startTime")
 		endTime := r.URL.Query().Get("endTime")
-		records, err := svcCtx.MySQLDao.QueryFlightRecords(orderID, startTime, endTime)
+		records, err := svcCtx.MySQLDao.QueryFlightRecords(orderID, uasID, startTime, endTime)
 		if err != nil {
 			http.Error(w, "查询失败", http.StatusInternalServerError)
 			return

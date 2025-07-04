@@ -31,7 +31,8 @@ type FlightRecord struct {
 }
 
 type FlightRecordReq struct {
-	OrderID   string `json:"OrderID"`   // 架次编号：厂商的无人机生产序列号（sn）－8位起飞日期（YYYYMMDD）－8 位随机码（数字或字母均可）如：1581F5FHD25G100C1SDN-20240320-owvGyLqe
+	OrderID   string `json:"OrderID"` // 架次编号：厂商的无人机生产序列号（sn）－8位起飞日期（YYYYMMDD）－8 位随机码（数字或字母均可）如：1581F5FHD25G100C1SDN-20240320-owvGyLqe
+	UasID     string `json:"uasID"`
 	StartTime string `json:"startTime"` // 起飞时间
 	EndTime   string `json:"endTime"`   // 降落时间
 }
@@ -104,8 +105,10 @@ type UasStatsResp struct {
 }
 
 type UpdatePayloadReq struct {
-	OrderID string `json:"OrderID"`
-	Payload int    `json:"payload"`
+	UasID     string `json:"uasID"`
+	StartTime string `json:"start_time"` // 起飞时间，格式"yyyyMMddHHmmss"，例：2024012409500
+	EndTime   string `json:"end_time"`   // 降落时间
+	Payload   int    `json:"payload"`
 }
 
 type UpdatePayloadResp struct {

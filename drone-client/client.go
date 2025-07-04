@@ -78,7 +78,7 @@ func main() {
 	latPtr := flag.Float64("lat", 22.8007210, "初始纬度（如 22.8007210）")
 	lonPtr := flag.Float64("lon", 113.9530990, "初始经度（如 113.9530990）")
 	bearingPtr := flag.Int("bearing", 45.0, "初始飞行方向角度（0~360）")
-	uasIdPtr := flag.String("id", "uas3", "无人机ID")
+	uasIdPtr := flag.String("id", "uas4", "无人机ID")
 
 	flag.Parse()
 
@@ -188,7 +188,7 @@ func main() {
 			Sn:             flightCode,
 			FlightStatus:   flighrStatus,
 			ManufacturerID: "112233",
-			UasID:          "Uas-default",
+			UasID:          "UAS04028624",
 			TimeStamp:      time.Now().Format("20060102150405"),
 			UasModel:       "Uas-default",
 			Coordinate:     1,
