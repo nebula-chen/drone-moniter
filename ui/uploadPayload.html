@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>载货量上报</title>
+    <style>
+        body {
+            font-family: "微软雅黑", Arial, sans-serif;
+            background: #fff;
+            text-align: center;
+        }
+        .container {
+            margin: 40px auto;
+            width: 420px;
+        }
+        h2 {
+            margin-bottom: 0;
+        }
+        h3 {
+            margin-top: 8px;
+            font-weight: normal;
+            color: #555;
+        }
+        .form-group {
+            margin: 18px 0;
+            text-align: left;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+            font-size: 16px;
+            text-align: right;
+        }
+        select, input[type="number"] {
+            width: 220px;
+            padding: 6px;
+            font-size: 15px;
+        }
+        .flight-info {
+            border: 1px solid #888;
+            margin: 18px 0;
+            padding: 10px 0;
+            background: #fafafa;
+        }
+        .flight-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 8px;
+        }
+        .flight-col {
+            width: 45%;
+            text-align: left;
+            font-size: 14px;
+        }
+        .payload-row {
+            margin: 20px 0 30px 0;
+            font-size: 17px;
+        }
+        .payload-row input {
+            width: 80px;
+            font-size: 17px;
+            text-align: center;
+        }
+        .btn-confirm {
+            background: #98e09a;
+            color: #222;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            padding: 7px 38px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-confirm:hover {
+            background: #7ed87e;
+        }
+        .flight-select-row {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .flight-radio {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>中山大学（深圳校区）航线</h2>
+        <h3>-- 载货量上报</h3>
+
+        <form id="payloadForm">
+            <div class="form-group">
+                <label for="shift">当天班次：</label>
+                <select id="shift" name="shift" required>
+                    <option value="">请选择</option>
+                    <option value="第一班">第一班</option>
+                    <option value="第二班">第二班</option>
+                    <option value="第三班">第三班</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="uasid">无人机编号：</label>
+                <select id="uasid" name="uasid" required>
+                    <option value="">请选择</option>
+                    <option value="5197">5197</option>
+                    <option value="5203">5203</option>
+                    <option value="5210">5210</option>
+                </select>
+            </div>
+
+            <div class="flight-info" id="flightInfo" style="display:none;">
+                <div id="flightList"></div>
+            </div>
+
+            <div class="payload-row">
+                载货量：<input type="number" id="payload" name="payload" min="0" step="1" required> Kg
+            </div>
+
+            <button type="submit" class="btn-confirm">确认</button>
+        </form>
+    </div>
+
+    <script>
+        // uasID映射
+        const uasMap = {
+            "5197": "UAS04028624",
+            "5203": "UAS04028648",
+            "5210": "UAS04143500"
+        };
+
+        // 班次时间区间
+        const shiftTime = {
+            "第一班": ["10:20:00", "11:20:00"],
+            "第二班": ["15:40:00", "16:40:00"],
+            "第三班": ["17:40:00", "18:40:00"]
+        };
+
+        // 获取当天日期字符串
+        function getTodayStr() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        // 监听班次和无人机编号选择
+        document.getElementById('shift').addEventListener('change', tryQueryFlights);
+        document.getElementById('uasid').addEventListener('change', tryQueryFlights);
+
+        let flightRecords = [];
+        let selectedOrderID = "";
+
+        function tryQueryFlights() {
+            const shift = document.getElementById('shift').value;
+            const uasid = document.getElementById('uasid').value;
+            if (!shift || !uasid) {
+                document.getElementById('flightInfo').style.display = "none";
+                return;
+            }
+            // 获取时间区间
+            const today = getTodayStr();
+            const [start, end] = shiftTime[shift];
+            const startTime = `${today} ${start}`;
+            const endTime = `${today} ${end}`;
+            const mappedUasID = uasMap[uasid];
+
+            // 查询飞行记录
+            fetch('/record/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    UasID: mappedUasID,
+                    StartTime: startTime,
+                    EndTime: endTime
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.Flightrecords || data.Flightrecords.length === 0) {
+                    document.getElementById('flightInfo').style.display = "none";
+                    flightRecords = [];
+                    selectedOrderID = "";
+                    return;
+                }
+                flightRecords = data.Flightrecords;
+                // 只有一条时，不显示
+                if (flightRecords.length === 1) {
+                    document.getElementById('flightInfo').style.display = "none";
+                    selectedOrderID = flightRecords[0].OrderID;
+                } else {
+                    // 多条时显示供选择
+                    renderFlightList(flightRecords);
+                    document.getElementById('flightInfo').style.display = "";
+                }
+            })
+            .catch(() => {
+                document.getElementById('flightInfo').style.display = "none";
+                flightRecords = [];
+                selectedOrderID = "";
+            });
+        }
+
+        function renderFlightList(records) {
+            const flightList = document.getElementById('flightList');
+            flightList.innerHTML = '';
+            records.forEach((rec, idx) => {
+                const div = document.createElement('div');
+                div.className = "flight-select-row";
+                div.innerHTML = `
+                    <label>
+                        <input type="radio" class="flight-radio" name="flightOrder" value="${rec.OrderID}" ${idx===0?'checked':''}>
+                        编号: ${rec.OrderID}，
+                        起点: ${rec.StartLat},${rec.StartLng}，
+                        终点: ${rec.EndLat},${rec.EndLng}，
+                        起飞: ${rec.StartTime}，
+                        降落: ${rec.EndTime}
+                    </label>
+                `;
+                flightList.appendChild(div);
+            });
+            // 默认选中第一个
+            selectedOrderID = records[0].OrderID;
+            // 监听radio变化
+            document.querySelectorAll('input[name="flightOrder"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    selectedOrderID = this.value;
+                });
+            });
+        }
+
+        // 表单提交
+        document.getElementById('payloadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const uasid = document.getElementById('uasid').value;
+            const shift = document.getElementById('shift').value;
+            const payload = document.getElementById('payload').value;
+            if (!uasid || !shift) {
+                alert("请选择班次和无人机编号");
+                return;
+            }
+            // 获取时间区间
+            const today = getTodayStr();
+            const [start, end] = shiftTime[shift];
+            const startTime = `${today} ${start}`;
+            const endTime = `${today} ${end}`;
+            const mappedUasID = uasMap[uasid];
+
+            // 只有一条时直接用，>1条时用选中的orderID
+            let orderID = selectedOrderID;
+            if (flightRecords.length === 1) {
+                orderID = flightRecords[0].OrderID;
+            } else if (flightRecords.length > 1) {
+                // 已在radio监听中赋值
+            } else {
+                alert("未查询到飞行记录，无法上报");
+                return;
+            }
+
+            fetch('/record/updatePayload', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    OrderID: orderID,
+                    Payload: parseInt(payload, 10) * 10
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.Code === 0){
+                    alert('上报成功！');
+                    // 重置表单
+                    document.getElementById('payloadForm').reset();
+                    document.getElementById('flightInfo').style.display = "none";
+                    flightRecords = [];
+                    selectedOrderID = "";
+                }else{
+                    alert('上报失败：' + data.ErrorMsg);
+                }
+            })
+            .catch(() => alert('网络错误'));
+        });
+    </script>
+</body>
+</html>

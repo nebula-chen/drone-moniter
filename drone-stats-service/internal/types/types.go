@@ -105,10 +105,8 @@ type UasStatsResp struct {
 }
 
 type UpdatePayloadReq struct {
-	UasID     string `json:"uasID"`
-	StartTime string `json:"start_time"` // 起飞时间，格式"yyyyMMddHHmmss"，例：2024012409500
-	EndTime   string `json:"end_time"`   // 降落时间
-	Payload   int    `json:"payload"`
+	OrderID string `json:"orderID"`
+	Payload int    `json:"payload"`
 }
 
 type UpdatePayloadResp struct {
