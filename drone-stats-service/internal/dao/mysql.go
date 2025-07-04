@@ -117,13 +117,17 @@ func (d *MySQLDao) FlightRecordExists(orderID string, startTime, endTime time.Ti
 }
 
 // 查询飞行记录（支持条件筛选）
-func (d *MySQLDao) QueryFlightRecords(orderID, startTime, endTime string) ([]map[string]interface{}, error) {
+func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string) ([]map[string]interface{}, error) {
 	query := `SELECT id, OrderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at
         FROM flight_records WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
-		query += " AND orderID=?"
+		query += " AND OrderID=?"
 		args = append(args, orderID)
+	}
+	if uasID != "" {
+		query += " AND uasID=? AND start_lat < 228000000 AND start_lng > 1139430000"
+		args = append(args, uasID)
 	}
 	if startTime != "" {
 		query += " AND start_time >= ?"

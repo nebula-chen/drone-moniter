@@ -25,7 +25,7 @@ func NewQueryFlightRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq) (resp *types.FlightRecordsResponse, err error) {
 	// 字段名已变更：OrderID, StartTime, EndTime
-	records, err := l.svcCtx.MySQLDao.QueryFlightRecords(req.OrderID, req.StartTime, req.EndTime)
+	records, err := l.svcCtx.MySQLDao.QueryFlightRecords(req.OrderID, req.UasID, req.StartTime, req.EndTime)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ func RecentTracksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				}
 			}
 			// 查询最近n条飞行记录
-			records, err := svcCtx.MySQLDao.QueryFlightRecords("", "", "")
+			records, err := svcCtx.MySQLDao.QueryFlightRecords("", "", "", "")
 			if err != nil {
 				httpx.Error(w, err)
 				return
