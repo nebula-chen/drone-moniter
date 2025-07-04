@@ -170,20 +170,23 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    UasID: mappedUasID,
-                    StartTime: startTime,
-                    EndTime: endTime
+                    OrderID: "",
+                    uasID: mappedUasID,
+                    startTime: startTime,
+                    endTime: endTime
                 })
             })
             .then(res => res.json())
             .then(data => {
-                if (!data.Flightrecords || data.Flightrecords.length === 0) {
+                // 兼容大小写
+                const records = data.Flightrecords || data.flightRecords || [];
+                if (!records || records.length === 0) {
                     document.getElementById('flightInfo').style.display = "none";
                     flightRecords = [];
                     selectedOrderID = "";
                     return;
                 }
-                flightRecords = data.Flightrecords;
+                flightRecords = records;
                 // 只有一条时，不显示
                 if (flightRecords.length === 1) {
                     document.getElementById('flightInfo').style.display = "none";
