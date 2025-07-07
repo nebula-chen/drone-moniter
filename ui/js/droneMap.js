@@ -727,11 +727,11 @@ window.addEventListener('load', function() {
             return null;
         }
 
-        // 修改：支持异步显示payload
+        // 修改：支持异步显示payload和无人机ID
         async updateInfoPanel(data) {
             // 兼容 OrderID/id 字段
             const orderID = data.OrderID || data.orderID || '--';
-            document.getElementById('panel-uav-id').textContent = orderID.slice(-8);
+            document.getElementById('panel-orderID').textContent = orderID.slice(-8);
 
             // 日期格式化
             let dateStr = '--';
@@ -757,14 +757,39 @@ window.addEventListener('load', function() {
 
             // 载货量：优先用data.payload，否则查主表
             let payload = data.payload;
-            if (payload === undefined || payload === null) {
+            let uasID = data.uasID || data.UasID || data.uavID || data.uavId || null;
+            if (payload === undefined || payload === null || !uasID) {
                 // 异步查主表
                 const record = await this.fetchFlightRecord(orderID);
-                if (record && record.payload !== undefined && record.payload !== null) {
-                    payload = record.payload;
+                if (record) {
+                    if (payload === undefined || payload === null) {
+                        payload = record.payload;
+                    }
+                    if (!uasID) {
+                        uasID = record.uasID || record.UasID;
+                    }
                 }
             }
             document.getElementById('panel-payload').textContent = (payload !== undefined && payload !== null ? (payload / 10) + 'kg' : '--');
+
+            // 新增：无人机ID转码
+            let uasIDDisplay = '--';
+            if (uasID) {
+                switch (uasID) {
+                    case 'UAS04028624':
+                        uasIDDisplay = '5197';
+                        break;
+                    case 'UAS04143500':
+                        uasIDDisplay = '5210';
+                        break;
+                    case 'UAS04028648':
+                        uasIDDisplay = '5203';
+                        break;
+                    default:
+                        uasIDDisplay = uasID;
+                }
+            }
+            document.getElementById('panel-uasID').textContent = uasIDDisplay;
         }
         
         // 清理方法，用于关闭WebSocket连接和清理资源
