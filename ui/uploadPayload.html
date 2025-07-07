@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>载货量上报</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
             font-family: "微软雅黑", Arial, sans-serif;
@@ -11,7 +12,9 @@
         }
         .container {
             margin: 40px auto;
-            width: 420px;
+            width: 95%;
+            max-width: 420px;
+            box-sizing: border-box;
         }
         h2 {
             margin-bottom: 0;
@@ -28,13 +31,15 @@
         label {
             display: inline-block;
             width: 100px;
+            margin-bottom: 10px;
             font-size: 16px;
-            text-align: right;
+            text-align: left;
         }
         select, input[type="number"] {
-            width: 220px;
+            width: 100%;
             padding: 6px;
             font-size: 15px;
+            box-sizing: border-box;
         }
         .flight-info {
             border: 1px solid #888;
@@ -113,7 +118,7 @@
             </div>
 
             <div class="payload-row">
-                载货量：<input type="number" id="payload" name="payload" min="0" step="1" required> Kg
+                载货量：<input type="number" id="payload" name="payload" min="0" step="0.1" required> Kg
             </div>
 
             <button type="submit" class="btn-confirm">确认</button>
@@ -154,8 +159,10 @@
         function tryQueryFlights() {
             const shift = document.getElementById('shift').value;
             const uasid = document.getElementById('uasid').value;
+            const confirmBtn = document.querySelector('.btn-confirm');
             if (!shift || !uasid) {
                 document.getElementById('flightInfo').style.display = "none";
+                confirmBtn.disabled = true;
                 return;
             }
             // 获取时间区间
@@ -184,9 +191,12 @@
                     document.getElementById('flightInfo').style.display = "none";
                     flightRecords = [];
                     selectedOrderID = "";
+                    confirmBtn.disabled = true;
+                    alert("该航线数据暂未更新，请稍后重试");
                     return;
                 }
                 flightRecords = records;
+                confirmBtn.disabled = false;
                 // 只有一条时，不显示
                 if (flightRecords.length === 1) {
                     document.getElementById('flightInfo').style.display = "none";
@@ -201,6 +211,7 @@
                 document.getElementById('flightInfo').style.display = "none";
                 flightRecords = [];
                 selectedOrderID = "";
+                confirmBtn.disabled = true;
             });
         }
 
@@ -255,22 +266,22 @@
                 orderID = flightRecords[0].OrderID;
             } else if (flightRecords.length > 1) {
                 // 已在radio监听中赋值
-            } else {
-                alert("未查询到飞行记录，无法上报");
-                return;
-            }
+            } // else {
+            //     alert("未查询到飞行记录，无法上报");
+            //     return;
+            // }
 
             fetch('/record/updatePayload', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    OrderID: orderID,
-                    Payload: parseInt(payload, 10) * 10
+                    orderID: orderID,
+                    payload: parseFloat(payload, 10) * 10
                 })
             })
             .then(res => res.json())
             .then(data => {
-                if(data.Code === 0){
+                if(data.code === 0){
                     alert('上报成功！');
                     // 重置表单
                     document.getElementById('payloadForm').reset();
@@ -278,7 +289,7 @@
                     flightRecords = [];
                     selectedOrderID = "";
                 }else{
-                    alert('上报失败：' + data.ErrorMsg);
+                    alert('上报失败：' + data.errorMsg);
                 }
             })
             .catch(() => alert('网络错误'));
