@@ -44,6 +44,7 @@ func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq)
 			Distance:    r["distance"].(float64),
 			BatteryUsed: r["battery_used"].(int),
 			CreatedAt:   r["created_at"].(string),
+			Payload:     r["payload"].(int),
 		})
 	}
 	return resp, nil

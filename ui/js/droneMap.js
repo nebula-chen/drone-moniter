@@ -309,8 +309,8 @@ window.addEventListener('load', function() {
             
             // 注意：后端的经纬度是整数，需要转换为浮点数并除以适当的因子
             const droneData = {
-                id: data.flightCode,
-                recordId: data.flightCode,                  // 无人机ID作为唯一标识
+                id: data.orderID,
+                flightCode: data.flightCode,                  // 无人机ID作为唯一标识
                 longitude: data.longitude / 10000000.0, // 将整数转换为度数
                 latitude: data.latitude / 10000000.0,   // 将经度转换为度数
                 altitude: data.altitude / 10,         // 海拔高度
@@ -352,7 +352,7 @@ window.addEventListener('load', function() {
                     path.push(newPoint);
                     this.flightPaths.set(data.orderID, path);
                     
-                    const color = this.getColorByRecordId(recordId);
+                    const color = this.getColorByRecordId(data.orderID);
                     this.updateFlightPath(data.orderID, path, color);   // 更新2D路径
                     // this.updateFlightPath3D(data.orderID, path);   // 更新3D路径
                 }
@@ -697,13 +697,38 @@ window.addEventListener('load', function() {
             }
         }
         
-        updateStatsPanel() {
-            // 更新统计面板 - 显示无人机数量和飞行次数
-            document.getElementById('drone-count').textContent = this.droneCollection.size;
-            document.getElementById('flight-count').textContent = this.flightCodeSet.size;
+        flightRecordCache = new Map(); // 新增：缓存架次主表信息
+
+        // 新增：异步获取主表信息（含payload），并缓存
+        async fetchFlightRecord(orderID) {
+            if (!orderID) return null;
+            if (this.flightRecordCache.has(orderID)) {
+                return this.flightRecordCache.get(orderID);
+            }
+            try {
+                const resp = await fetch('/record/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    OrderID: orderID,
+                    uasID: "",
+                    startTime: "",
+                    endTime: "",
+                })
+                });
+                const data = await resp.json();
+                if (data.flightRecords && data.flightRecords.length > 0) {
+                    this.flightRecordCache.set(orderID, data.flightRecords[0]);
+                    return data.flightRecords[0];
+                }
+            } catch (e) {
+                console.error('获取架次主表信息失败', e);
+            }
+            return null;
         }
-        
-        updateInfoPanel(data) {
+
+        // 修改：支持异步显示payload
+        async updateInfoPanel(data) {
             // 兼容 OrderID/id 字段
             const orderID = data.OrderID || data.orderID || '--';
             document.getElementById('panel-uav-id').textContent = orderID.slice(-8);
@@ -727,9 +752,19 @@ window.addEventListener('load', function() {
             document.getElementById('panel-date').textContent = dateStr;
 
             document.getElementById('panel-soc').textContent = (data.SOC !== undefined ? data.SOC + '%' : '--');
-            document.getElementById('panel-payload').textContent = (data.payload !== undefined ? data.payload : '--');
-            document.getElementById('panel-wind-dir').textContent = (data.windDirect !== undefined ? data.windDirect : '--');
+            document.getElementById('panel-wind-dir').textContent = (data.windDirect !== undefined ? data.windDirect + '°': '--');
             document.getElementById('panel-wind-speed').textContent = (data.windSpeed !== undefined ? (data.windSpeed / 10).toFixed(1) + "m/s" : '--');
+
+            // 载货量：优先用data.payload，否则查主表
+            let payload = data.payload;
+            if (payload === undefined || payload === null) {
+                // 异步查主表
+                const record = await this.fetchFlightRecord(orderID);
+                if (record && record.payload !== undefined && record.payload !== null) {
+                    payload = record.payload;
+                }
+            }
+            document.getElementById('panel-payload').textContent = (payload !== undefined && payload !== null ? (payload / 10) + 'kg' : '--');
         }
         
         // 清理方法，用于关闭WebSocket连接和清理资源

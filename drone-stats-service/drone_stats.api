@@ -43,6 +43,7 @@ type FlightRecord {
 	Distance    float64 `json:"distance"` // 飞行距离，单位：米（m）
 	BatteryUsed int     `json:"battery_used"` // 耗电量，单位：安时（A.h）
 	CreatedAt   string  `json:"created_at"`
+	Payload     int     `json:"payload"` // 载货量，单位：千克（kg）精确到小数点后 1 位，乘 10 后传输
 }
 
 type FlightRecordsResponse {
