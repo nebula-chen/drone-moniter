@@ -483,6 +483,7 @@ html, body, form{overflow-y:auto;height:100%;}
     display: flex;
     gap: 6px;
     z-index: 20;
+    align-items: flex-start; /* 关键：顶部对齐，避免高度拉齐 */
 }
 .drone-info-panel {
     background: rgba(16,54,87,0.85);
@@ -491,6 +492,10 @@ html, body, form{overflow-y:auto;height:100%;}
     padding: 6px 12px 6px 8px;
     min-width: 80px;
     box-shadow: 0 2px 8px rgba(32,219,253,0.08);
+    display: flex;
+    flex-direction: column;   /* 关键：垂直排列内容 */
+    justify-content: center;  /* 关键：内容垂直居中 */
+    height: auto;             /* 关键：高度自适应内容 */
 }
 .drone-info-panel p {
     color: #fff;
