@@ -66,6 +66,15 @@
             font-size: 17px;
             text-align: center;
         }
+        .expressCount-row {
+            margin: 20px 0 30px 0;
+            font-size: 17px;
+        }
+        .expressCount-row input {
+            width: 80px;
+            font-size: 17px;
+            text-align: center;
+        }
         .btn-confirm {
             background: #98e09a;
             color: #222;
@@ -119,6 +128,10 @@
 
             <div class="payload-row">
                 载货量：<input type="number" id="payload" name="payload" min="0" step="0.1" required> Kg
+            </div>
+
+            <div class="expressCount-row">
+                件数：<input type="number" id="expressCount" name="expressCount" min="0" step="1" required> 件
             </div>
 
             <button type="submit" class="btn-confirm">确认</button>
@@ -249,6 +262,7 @@
             const uasid = document.getElementById('uasid').value;
             const shift = document.getElementById('shift').value;
             const payload = document.getElementById('payload').value;
+            const expressCount = document.getElementById('expressCount').value;
             if (!uasid || !shift) {
                 alert("请选择班次和无人机编号");
                 return;
@@ -276,7 +290,8 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     orderID: orderID,
-                    payload: parseFloat(payload, 10) * 10
+                    payload: parseFloat(payload, 10) * 10,
+                    expressCount: parseInt(expressCount, 10)
                 })
             })
             .then(res => res.json())

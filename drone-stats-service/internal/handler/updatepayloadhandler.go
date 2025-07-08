@@ -16,7 +16,7 @@ func UpdatePayloadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.Error(w, err)
 			return
 		}
-		err := svcCtx.MySQLDao.UpdateFlightPayload(req.OrderID, req.Payload)
+		err := svcCtx.MySQLDao.UpdateFlightPayload(req.OrderID, req.Payload, req.ExpressCount)
 		if err != nil {
 			httpx.OkJson(w, types.UpdatePayloadResp{
 				Code:     1,

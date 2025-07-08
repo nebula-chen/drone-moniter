@@ -377,7 +377,7 @@ html, body, form{overflow-y:auto;height:100%;}
     gap: 0;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 78%;
     min-height: 40%;
     margin-bottom: 0;
 }
@@ -386,14 +386,14 @@ html, body, form{overflow-y:auto;height:100%;}
     height: 20%;
     width: 100%;
     background: rgba(16, 54, 87, 0.64);
-    padding: 0px 6px;
+    padding: 2px 6px;
     border-radius: 4px;
     backdrop-filter: blur(8px);
     border: 1px solid #1380bd;
 }
 .record-panel p {
     color: #fff;
-    font-size: 18px;
+    font-size: 16px;
 }
 .record-panel.no-selection {
     font-style: italic;
