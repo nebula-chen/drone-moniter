@@ -112,7 +112,7 @@ func autoMigrate(db *sql.DB) error {
         battery_used INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		payload INT NOT NULL DEFAULT 0,
-		expressCount INT NOT NULL DEFAULT 0,
+		expressCount INT NOT NULL DEFAULT 0
     );`)
 	if err != nil {
 		return err

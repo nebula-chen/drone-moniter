@@ -758,6 +758,7 @@ window.addEventListener('load', function() {
             // 载货量：优先用data.payload，否则查主表
             let payload = data.payload;
             let uasID = data.uasID || data.UasID || data.uavID || data.uavId || null;
+            let expressCount = data.expressCount || data.ExpressCount || null || undefined;
             if (payload === undefined || payload === null || !uasID) {
                 // 异步查主表
                 const record = await this.fetchFlightRecord(orderID);
@@ -768,9 +769,13 @@ window.addEventListener('load', function() {
                     if (!uasID) {
                         uasID = record.uasID || record.UasID;
                     }
+                    if (expressCount === undefined || expressCount === null) {
+                        expressCount = record.expressCount || record.ExpressCount;
+                    }
                 }
             }
             document.getElementById('panel-payload').textContent = (payload !== undefined && payload !== null ? (payload / 10) + 'kg' : '--');
+            document.getElementById('panel-expressCount').textContent = (expressCount !== undefined && expressCount !== null ? expressCount + '件' : '--');
 
             // 新增：无人机ID转码
             let uasIDDisplay = '--';
