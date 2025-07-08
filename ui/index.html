@@ -197,7 +197,7 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="record_box" id="flight-records-list"></div>
-				<div id="flight-records-pagination" style="font-size: 16px;"></div>
+				<div id="flight-records-pagination" style="font-size: 12px;"></div>
 			</div>
 		</div>
 		<div class="clear"></div>
@@ -612,11 +612,11 @@
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadOnlineCount, 10 * 1000); // 每10秒刷新一次在线架次
-			setInterval(loadRecordsTimeSeries, 2 * 3600 * 1000); // 每2小时刷新一次
-			setInterval(loadSOCUsageStats, 2 * 3600 * 1000); // 每2小时刷新一次
-			setInterval(loadPayloadStats, 2 * 3600 * 1000); // 每2小时刷新一次
+			setInterval(loadRecordsTimeSeries, 5 * 60 * 1000); // 每2小时刷新一次
+			setInterval(loadSOCUsageStats, 5 * 60 * 1000); // 每2小时刷新一次
+			setInterval(loadPayloadStats, 5 * 60 * 1000); // 每2小时刷新一次
 			setInterval(loadAvgStats, 2 * 3600 * 1000); // 每2小时刷新一次
-			setInterval(loadFlightRecords, 2 * 60 * 1000); // 每2小时刷新一次
+			setInterval(loadFlightRecords, 5 * 60 * 1000); // 每2小时刷新一次
 		})
 
 		// 飞行架次统计图表配置

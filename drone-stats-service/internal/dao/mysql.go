@@ -118,7 +118,7 @@ func (d *MySQLDao) FlightRecordExists(orderID string, startTime, endTime time.Ti
 
 // 查询飞行记录（支持条件筛选）
 func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string) ([]map[string]interface{}, error) {
-	query := `SELECT id, OrderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at, payload
+	query := `SELECT id, OrderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at, payload, expressCount
         FROM flight_records WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
@@ -146,13 +146,13 @@ func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string)
 	var records []map[string]interface{}
 	for rows.Next() {
 		var (
-			id, batteryUsed, payload           int
-			orderID, uasID                     string
-			startTime, endTime, createdAt      sql.NullTime
-			startLat, startLng, endLat, endLng sql.NullInt64
-			distance                           sql.NullFloat64
+			id, batteryUsed, payload, expressCount int
+			orderID, uasID                         string
+			startTime, endTime, createdAt          sql.NullTime
+			startLat, startLng, endLat, endLng     sql.NullInt64
+			distance                               sql.NullFloat64
 		)
-		err := rows.Scan(&id, &orderID, &uasID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt, &payload)
+		err := rows.Scan(&id, &orderID, &uasID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt, &payload, &expressCount)
 		if err != nil {
 			continue
 		}
@@ -170,6 +170,7 @@ func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string)
 			"battery_used": batteryUsed,
 			"created_at":   createdAt.Time.Format("2006-01-02 15:04:05"),
 			"payload":      payload,
+			"expressCount": expressCount,
 		}
 		records = append(records, record)
 	}
@@ -445,7 +446,7 @@ func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interf
 }
 
 // 更新指定架次的载货量
-func (d *MySQLDao) UpdateFlightPayload(orderID string, payload int) error {
-	_, err := d.DB.Exec("UPDATE flight_records SET payload=? WHERE OrderID=?", payload, orderID)
+func (d *MySQLDao) UpdateFlightPayload(orderID string, payload, expressCount int) error {
+	_, err := d.DB.Exec("UPDATE flight_records SET payload=?, expressCount=? WHERE OrderID=?", payload, expressCount, orderID)
 	return err
 }
