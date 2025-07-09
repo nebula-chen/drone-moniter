@@ -751,15 +751,17 @@ window.addEventListener('load', function() {
             }
             document.getElementById('panel-date').textContent = dateStr;
 
-            document.getElementById('panel-soc').textContent = (data.SOC !== undefined ? data.SOC + '%' : '--');
             document.getElementById('panel-wind-dir').textContent = (data.windDirect !== undefined ? data.windDirect + '°': '--');
             document.getElementById('panel-wind-speed').textContent = (data.windSpeed !== undefined ? (data.windSpeed / 10).toFixed(1) + "m/s" : '--');
+            document.getElementById('panel-temperture').textContent = (data.temperture !== undefined ? (data.temperture / 10).toFixed(1) + "℃" : '--');
+            document.getElementById('panel-humidity').textContent = (data.humidity !== undefined ? (data.humidity / 10).toFixed(1) + "%" : '--');
 
             // 载货量：优先用data.payload，否则查主表
-            let payload = data.payload;
             let uasID = data.uasID || data.UasID || data.uavID || data.uavId || null;
-            let expressCount = data.expressCount || data.ExpressCount || null || undefined;
-            if (payload === undefined || payload === null || !uasID) {
+            let batteryUsed = 0.0;
+            let expressCount = data.expressCount;
+            let payload = data.payload;
+            if (payload === undefined || payload === null || !uasID || expressCount === undefined || expressCount === null) {
                 // 异步查主表
                 const record = await this.fetchFlightRecord(orderID);
                 if (record) {
@@ -769,11 +771,15 @@ window.addEventListener('load', function() {
                     if (!uasID) {
                         uasID = record.uasID || record.UasID;
                     }
-                    if (expressCount === undefined || expressCount === null) {
-                        expressCount = record.expressCount || record.ExpressCount;
+                    if (payload === undefined || payload === null) {
+                        expressCount = record.expressCount;
+                    }
+                    if (record.batteryUsed !== null && record.batteryUsed > 0) {
+                        batteryUsed = record.batteryUsed;
                     }
                 }
             }
+            document.getElementById('panel-batteryUsed').textContent = (batteryUsed !== undefined && payload !== null ? batteryUsed + 'A.h' : '--');
             document.getElementById('panel-payload').textContent = (payload !== undefined && payload !== null ? (payload / 10) + 'kg' : '--');
             document.getElementById('panel-expressCount').textContent = (expressCount !== undefined && expressCount !== null ? expressCount + '件' : '--');
 
