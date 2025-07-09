@@ -136,13 +136,15 @@
 							<p>日期: <span id="panel-date">--</span></p>
 						</div>
 						<div class="drone-info-panel" id="panel-battery-payload">
-							<p>电量: <span id="panel-soc">--</span></p>
+							<p>耗电量: <span id="panel-batteryUsed">--</span></p>
 							<p>票数: <span id="panel-expressCount">--</span></p>
 							<p>载货量: <span id="panel-payload">--</span></p>
 						</div>
 						<div class="drone-info-panel" id="panel-wind">
 							<p>风向: <span id="panel-wind-dir">--</span></p>
 							<p>风速: <span id="panel-wind-speed">--</span></p>
+							<p>温度: <span id="panel-temperture"></span></p>
+							<p>湿度: <span id="panel-humidity"></span></p>
 						</div>
 					</div>
 					<div id="altitude-curve-chart" style="display:none;">
@@ -674,7 +676,7 @@
 				}
 				// 单位转为km，保留两位小数
 				let distArrKm = distArr.map(d => (d / 1000).toFixed(2));
-				showAltitudeCurve(distArrKm, altArr, RMArr);
+				showAltitudeCurve(distArrKm, altArr, RMArr, points);
 			});
 		});
 
@@ -684,54 +686,103 @@
 		});
 
 		// 绘制曲线
-		function showAltitudeCurve(xArr, yArr, RMArr) {
-			let chartDom = document.getElementById('altitude-curve-echart');
-			let myChart = echarts.init(chartDom);
-			let option = {
-				title: { text: '飞行高度曲线', left: 'center', textStyle: { color: '#fff' } },
-				tooltip: {
-					trigger: 'axis',
-					formatter: function(params) {
-						// params[0] 为当前点
-						let idx = params[0].dataIndex;
-						let dist = xArr[idx] || '--';
-						let alt = yArr[idx] || '--';
-						let RM = RMArr && RMArr[idx] !== undefined ? RMArr[idx] : '--';
-						return `距离：${dist} km<br/>海拔：${alt} m<br/>电量：${RM} A.h`;
-					},
-					backgroundColor: 'rgba(16,54,87,0.98)',
-					borderColor: '#20dbfd',
-					borderWidth: 1,
-					textStyle: { color: '#fff', fontSize: 15 }
-				},
-				xAxis: {
-					type: 'category',
-					name: '飞行距离(m)',
-					nameLocation: 'middle', // 横坐标标题居中
-					nameGap: 30,            // 标题与轴线的距离
-					data: xArr,
-					axisLabel: { color: '#fff' },
-					nameTextStyle: { color: '#fff' },
-					axisLine: { lineStyle: { color: '#fff' } },
-				},
-				yAxis: {
-					type: 'value',
-					name: '海拔(m)',
-					axisLabel: { color: '#fff' },
-					nameTextStyle: { color: '#fff' },
-					axisLine: { lineStyle: { color: '#fff' } },
-				},
-				series: [{
-					data: yArr,
-					type: 'line',
-					smooth: true,
-					symbol: 'circle',
-					lineStyle: { color: '#20dbfd', width: 3 },
-					itemStyle: { color: '#20dbfd' }
-				}],
-				grid: { left: 60, right: 30, top: 60, bottom: 40 }
-			};
-			myChart.setOption(option);
+		function showAltitudeCurve(xArr, yArr, RMArr, points) {
+            let chartDom = document.getElementById('altitude-curve-echart');
+            let myChart = echarts.init(chartDom);
+
+            // === 起飞/降落阶段自动识别 ===
+            // 1. 找最大高度
+            let maxH = 0;
+            if (points && points.length > 0) {
+                maxH = Math.max(...points.map(p => p.height !== undefined ? p.height : 0));
+            }
+            // 2. 起飞阶段：从第一个点到高度达到最大高度90%的点
+            let takeoffEnd = 0;
+            if (points && points.length > 0) {
+                for (let i = 0; i < points.length; i++) {
+                    if (points[i].height >= maxH * 0.9) {
+                        takeoffEnd = i;
+                        break;
+                    }
+                }
+            }
+            // 3. 降落阶段：从高度最大90%的点到最后一个点
+            let landingStart = takeoffEnd;
+            let landingEnd = points ? points.length - 1 : yArr.length - 1;
+
+            // 4. 计算耗电量（RM 可能为字符串'--'，需判断）
+            function getRM(idx) {
+                let v = RMArr && RMArr[idx];
+                return (v !== undefined && v !== '--') ? parseFloat(v) : null;
+            }
+            let takeoffUsed = (getRM(0) !== null && getRM(takeoffEnd) !== null) ? (getRM(0) - getRM(takeoffEnd)).toFixed(2) : '--';
+            let landingUsed = (getRM(landingStart) !== null && getRM(landingEnd) !== null) ? (getRM(landingStart) - getRM(landingEnd)).toFixed(2) : '--';
+
+            // 5. 高亮起飞/降落区间
+            let markAreaData = [];
+            if (takeoffEnd > 0) {
+                markAreaData.push([{ xAxis: xArr[0] }, { xAxis: xArr[takeoffEnd] }]);
+            }
+            if (landingStart < landingEnd) {
+                markAreaData.push([{ xAxis: xArr[landingStart] }, { xAxis: xArr[landingEnd] }]);
+            }
+
+            let option = {
+                title: { text: '飞行高度曲线', left: 'center', textStyle: { color: '#fff' } },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        let idx = params[0].dataIndex;
+                        let dist = xArr[idx] || '--';
+                        let alt = yArr[idx] || '--';
+                        let RM = RMArr && RMArr[idx] !== undefined ? RMArr[idx] : '--';
+                        return `距离：${dist} km<br/>海拔：${alt} m<br/>电量：${RM} A.h`;
+                    },
+                    backgroundColor: 'rgba(16,54,87,0.98)',
+                    borderColor: '#20dbfd',
+                    borderWidth: 1,
+                    textStyle: { color: '#fff', fontSize: 15 }
+                },
+                xAxis: {
+                    type: 'category',
+                    name: '飞行距离(m)',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    data: xArr,
+                    axisLabel: { color: '#fff' },
+                    nameTextStyle: { color: '#fff' },
+                    axisLine: { lineStyle: { color: '#fff' } },
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '海拔(m)',
+                    axisLabel: { color: '#fff' },
+                    nameTextStyle: { color: '#fff' },
+                    axisLine: { lineStyle: { color: '#fff' } },
+                },
+                series: [{
+                    data: yArr,
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'circle',
+                    lineStyle: { color: '#20dbfd', width: 3 },
+                    itemStyle: { color: '#20dbfd' }
+                }],
+                markArea: {
+                    silent: true,
+                    itemStyle: { color: 'rgba(32,219,253,0.15)' },
+                    data: markAreaData
+                },
+                grid: { left: 60, right: 30, top: 80, bottom: 40 }
+            };
+            myChart.setOption(option);
+
+            // 6. 展示耗电量
+            let infoHtml = `<div style="color:#fff;text-align:center;margin-top:10%;">
+				起飞耗电：${takeoffUsed} A.h　|　降落耗电：${landingUsed} A.h
+			</div>`;
+            $('#altitude-curve-echart').next('.altitude-curve-info').remove();
+            $('#altitude-curve-echart').after(`<div class="altitude-curve-info">${infoHtml}</div>`);
 		}
 
 		// 经纬度距离计算（米）
