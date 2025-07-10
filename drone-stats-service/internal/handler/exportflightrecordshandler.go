@@ -1,44 +1,53 @@
 package handler
 
 import (
-	"encoding/csv"
+	"encoding/json"
 	"net/http"
-	"strconv"
+	"os"
+	"path/filepath"
+	"time"
 
+	"drone-stats-service/internal/dao"
 	"drone-stats-service/internal/svc"
+	"drone-stats-service/internal/types"
 )
 
 func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		orderID := r.URL.Query().Get("OrderID")
-		uasID := r.URL.Query().Get("uasID") // 新增uasID参数
-		startTime := r.URL.Query().Get("startTime")
-		endTime := r.URL.Query().Get("endTime")
-		records, err := svcCtx.MySQLDao.QueryFlightRecords(orderID, uasID, startTime, endTime)
-		if err != nil {
-			http.Error(w, "查询失败", http.StatusInternalServerError)
+		var req types.FlightRecordReq
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "请求参数错误: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", "attachment;filename=flight_records.csv")
-		writer := csv.NewWriter(w)
-		writer.Write([]string{"ID", "架次编号", "无人机编号", "起飞时间", "降落时间", "起飞纬度", "起飞经度", "降落纬度", "降落经度", "飞行距离", "电池使用量", "创建时间"})
-		for _, r := range records {
-			writer.Write([]string{
-				strconv.Itoa(r["id"].(int)),
-				r["OrderID"].(string),
-				r["uasID"].(string), // 新增uasID
-				r["start_time"].(string),
-				r["end_time"].(string),
-				strconv.FormatInt(r["start_lat"].(int64), 10),
-				strconv.FormatInt(r["start_lng"].(int64), 10),
-				strconv.FormatInt(r["end_lat"].(int64), 10),
-				strconv.FormatInt(r["end_lng"].(int64), 10),
-				strconv.FormatFloat(r["distance"].(float64), 'f', 2, 64),
-				strconv.Itoa(r["battery_used"].(int)),
-				r["created_at"].(string),
-			})
+		start, err := time.Parse(time.RFC3339, req.StartTime)
+		if err != nil {
+			http.Error(w, "开始时间格式错误: "+err.Error(), http.StatusBadRequest)
+			return
 		}
-		writer.Flush()
+		end, err := time.Parse(time.RFC3339, req.EndTime)
+		if err != nil {
+			http.Error(w, "结束时间格式错误: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		start = start.UTC()
+		end = end.UTC()
+		records, err := svcCtx.InfluxDao.GetFlightDate(start, end)
+		if err != nil {
+			http.Error(w, "查询失败: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// 临时文件路径
+		tmpFile := filepath.Join(os.TempDir(), "flight_records.xlsx")
+		// 导出为Excel
+		err = dao.ExportFlightRecordsToExcel(records, tmpFile)
+		if err != nil {
+			http.Error(w, "导出失败: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer os.Remove(tmpFile)
+
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		w.Header().Set("Content-Disposition", "attachment; filename=flight_records.xlsx")
+		http.ServeFile(w, r, tmpFile)
 	}
 }
