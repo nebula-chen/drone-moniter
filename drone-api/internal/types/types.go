@@ -23,10 +23,12 @@ type DroneStatusReq struct {
 	Course         int    `json:"course"`
 	SOC            int    `json:"SOC"`
 	RM             int    `json:"RM"`
-	WindSpeed      int    `json:"windSpeed,optional"`
-	WindDirect     int    `json:"windDirect,optional"`
-	Temperture     int    `json:"temperture,optional"`
-	Humidity       int    `json:"humidity,optional"`
+	Voltage        int    `json:"voltage,optional"`
+	Current        int    `json:"current,optional"`
+	WindSpeed      int    `json:"windSpeed"`
+	WindDirect     int    `json:"windDirect"`
+	Temperture     int    `json:"temperture"`
+	Humidity       int    `json:"humidity"`
 }
 
 type DroneStatusResp struct {
