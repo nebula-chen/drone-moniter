@@ -168,6 +168,8 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 			Course:       int(getInt64(r, "course")),
 			SOC:          int(getInt64(r, "SOC")),
 			RM:           int(getInt64(r, "RM")),
+			Voltage:      int(getInt64(r, "voltage")),
+			Current:      int(getInt64(r, "current")),
 			WindSpeed:    int(getInt64(r, "windSpeed")),
 			WindDirect:   int(getInt64(r, "windDirect")),
 			Temperture:   int(getInt64(r, "temperture")),
@@ -182,29 +184,6 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 		fmt.Println("批量插入轨迹点失败:", err)
 	}
 
-	// 返回整理后的飞行轨迹
-	resp = &types.TrackResponse{}
-	for _, r := range flightPoints {
-		resp.Track = append(resp.Track, types.TrackPoints{
-			OrderID:      req.OrderID,
-			FlightStatus: getString(r, "flightStatus"),
-			TimeStamp:    r["_time"].(time.Time).Format("20060102150405"), // 按API要求格式
-			Longitude:    getInt64(r, "longitude"),
-			Latitude:     getInt64(r, "latitude"),
-			HeightType:   int(getInt64(r, "heightType")),
-			Height:       int(getInt64(r, "height")),
-			Altitude:     int(getInt64(r, "altitude")),
-			VS:           int(getInt64(r, "VS")),
-			GS:           int(getInt64(r, "GS")),
-			Course:       int(getInt64(r, "course")),
-			SOC:          int(getInt64(r, "SOC")),
-			RM:           int(getInt64(r, "RM")),
-			WindSpeed:    int(getInt64(r, "windSpeed")),
-			WindDirect:   int(getInt64(r, "windDirect")),
-			Temperture:   int(getInt64(r, "temperture")),
-			Humidity:     int(getInt64(r, "humidity")),
-		})
-	}
 	return
 }
 
