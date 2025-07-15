@@ -33,6 +33,8 @@ type FlightTrackPoint struct {
 	Course       int       `db:"course"`
 	SOC          int       `db:"SOC"`
 	RM           int       `db:"RM"`
+	Voltage      int       `db:"voltage"`
+	Current      int       `db:"current"`
 	WindSpeed    int       `db:"windSpeed"`
 	WindDirect   int       `db:"windDirect"`
 	Temperture   int       `db:"temperture"`

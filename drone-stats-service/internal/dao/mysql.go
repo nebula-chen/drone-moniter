@@ -60,13 +60,34 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	if len(points) == 0 {
 		return nil
 	}
-	query := "INSERT INTO flight_track_points (orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity) VALUES "
+	query :=
+		`INSERT INTO flight_track_points (
+			orderID,
+			flightStatus,
+			timeStamp,
+			longitude,
+			latitude,
+			heightType,
+			height,
+			altitude,
+			VS,
+			GS,
+			course,
+			SOC,
+			RM,
+			voltage,
+			current,
+			windSpeed,
+			windDirect,
+			temperture,
+			humidity
+		) VALUES `
 	vals := []interface{}{}
 	for _, tp := range points {
-		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
+		query += "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?),"
 		vals = append(vals,
 			tp.OrderID, tp.FlightStatus, tp.TimeStamp.Format("2006-01-02 15:04:05"),
-			tp.Longitude, tp.Latitude, tp.HeightType, tp.Height, tp.Altitude, tp.VS, tp.GS, tp.Course, tp.SOC, tp.RM, tp.WindSpeed, tp.WindDirect, tp.Temperture, tp.Humidity)
+			tp.Longitude, tp.Latitude, tp.HeightType, tp.Height, tp.Altitude, tp.VS, tp.GS, tp.Course, tp.SOC, tp.RM, tp.Voltage, tp.Current, tp.WindSpeed, tp.WindDirect, tp.Temperture, tp.Humidity)
 	}
 	query = query[:len(query)-1] // 去掉最后一个逗号
 	_, err := d.DB.Exec(query, vals...)

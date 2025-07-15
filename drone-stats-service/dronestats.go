@@ -135,6 +135,8 @@ func autoMigrate(db *sql.DB) error {
         course INT,
         SOC INT,
         RM INT,
+		voltage INT,
+		current INT,
         windSpeed INT,
         windDirect INT,
         temperture INT,
