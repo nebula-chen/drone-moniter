@@ -397,7 +397,6 @@ window.addEventListener('load', function() {
                 polyline.setPath(path);
             } else {
                 // 创建新的路径线
-                
                 const polyline = new AMap.Polyline({
                     path: path,
                     strokeColor: color,
@@ -408,14 +407,47 @@ window.addEventListener('load', function() {
                     strokeDasharray: [10, 5],
                     visible: this.showPaths // 根据当前设置决定是否可见
                 });
-                
+
+                // 鼠标悬停事件
+                polyline.on('mousemove', (e) => {
+                    // 找到最近的点
+                    let minDist = Infinity, nearestIdx = -1;
+                    path.forEach((pt, idx) => {
+                        const dist = Math.pow(pt[0] - e.lnglat.lng, 2) + Math.pow(pt[1] - e.lnglat.lat, 2);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearestIdx = idx;
+                        }
+                    });
+                    if (nearestIdx >= 0) {
+                        // 这里可以自定义显示内容，比如高度、电量等
+                        const info = `
+                            <div style="color:#333;">
+                                <b>轨迹点${nearestIdx + 1}</b><br>
+                                经度: ${path[nearestIdx][0].toFixed(6)}<br>
+                                纬度: ${path[nearestIdx][1].toFixed(6)}<br>
+                                高度: ${path[nearestIdx][2]} m
+                            </div>
+                        `;
+                        if (!this._infoWindow) {
+                            this._infoWindow = new AMap.InfoWindow({ offset: new AMap.Pixel(0, -20) });
+                        }
+                        this._infoWindow.setContent(info);
+                        this._infoWindow.open(this.map, e.lnglat);
+                    }
+                });
+                // 鼠标移出时关闭信息窗体
+                polyline.on('mouseout', () => {
+                    if (this._infoWindow) this._infoWindow.close();
+                });
+
                 this.map.add(polyline);
-                
+
                 // 如果当前是隐藏轨迹模式，则立即隐藏这条新轨迹
                 if (!this.showPaths) {
                     polyline.hide();
                 }
-                
+
                 this.pathPolylines.set(recordId, polyline);
             }
         }
@@ -759,7 +791,7 @@ window.addEventListener('load', function() {
             // 载货量：优先用data.payload，否则查主表
             let uasID = data.uasID || data.UasID || data.uavID || data.uavId || null;
             let batteryUsed = 0.0;
-            let expressCount = data.expressCount;
+            let expressCount = 0;
             let payload = data.payload;
             if (payload === undefined || payload === null || !uasID || expressCount === undefined || expressCount === null) {
                 // 异步查主表
@@ -771,11 +803,11 @@ window.addEventListener('load', function() {
                     if (!uasID) {
                         uasID = record.uasID || record.UasID;
                     }
-                    if (payload === undefined || payload === null) {
+                    if (record.expressCount > 0) {
                         expressCount = record.expressCount;
                     }
-                    if (record.batteryUsed !== null && record.batteryUsed > 0) {
-                        batteryUsed = record.batteryUsed;
+                    if (record.battery_used !== null && record.battery_used > 0) {
+                        batteryUsed = record.battery_used;
                     }
                 }
             }
