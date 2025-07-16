@@ -87,6 +87,8 @@ window.addEventListener('load', function() {
             this._trackPlayTimer = null;      // 当前动画定时器
             this._trackPlayMode = 'auto';     // 'auto'轮播, 'manual'指定
             this._autoResumeTimer = null;     // 2分钟自动恢复轮播
+
+            this.currentOrderID = null; // 当前正在播放的orderID
         }
 
         // 替换键盘控制为按钮控制
@@ -519,6 +521,8 @@ window.addEventListener('load', function() {
                     const color = this.getColorByRecordId(recordIds[idx]);
                     let path = [];
                     let i = 0;
+                    // 关键：设置当前orderID
+                    this.currentOrderID = recordIds[idx];
                     const animate = () => {
                         if (this._trackPlayMode !== 'auto') return; // 若被打断则退出
                         if (i < points.length) {
@@ -549,7 +553,8 @@ window.addEventListener('load', function() {
         async showTrackByRecordId(recordId) {
             this._stopTrackAnimation();
             this._trackPlayMode = 'manual';
-            // 2分钟后自动恢复轮播
+            // 关键：设置当前orderID
+            this.currentOrderID = recordId;
             this._autoResumeTimer = setTimeout(() => {
                 this.showRecentTracksAnimated();
             }, 1 * 60 * 1000);

@@ -647,8 +647,12 @@
 		$('#altitudeCurve').click(function() {
 			// 显示曲线容器
 			$('#altitude-curve-chart').fadeIn(200);
-			// 拉取最近一条轨迹
-			$.get('/record/recentTracks?n=1', function(res) {
+
+			// 优先获取当前orderID
+			let orderID = (window.droneMap && typeof droneMap.getCurrentOrderID === 'function') ? droneMap.getCurrentOrderID() : null;
+
+			let url = orderID ? `/record/recentTracks?orderID=${orderID}` : '/record/recentTracks?n=1';
+			$.get(url, function(res) {
 				if (!res || !res.track || res.track.length === 0) {
 					showAltitudeCurve([], [], []);
 					return;
@@ -706,8 +710,18 @@
                     }
                 }
             }
-            // 3. 降落阶段：从高度最大90%的点到最后一个点
-            let landingStart = takeoffEnd;
+            // 2.5. 巡航阶段：从takeoffEnd到首次低于90%最大高度的点
+			let cruiseEnd = points ? points.length - 1 : yArr.length - 1;
+			if (points && points.length > 0) {
+				for (let i = takeoffEnd + 1; i < points.length; i++) {
+					if (points[i].height < maxH * 0.9) {
+						cruiseEnd = i - 1;
+						break;
+					}
+				}
+			}
+			// 3. 降落阶段：从巡航结束点到最后一个点
+			let landingStart = cruiseEnd;
             let landingEnd = points ? points.length - 1 : yArr.length - 1;
 
             // 4. 计算耗电量（RM 可能为字符串'--'，需判断）
