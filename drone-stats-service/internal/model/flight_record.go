@@ -13,7 +13,7 @@ type FlightRecord struct {
 	EndLat      int64     `db:"end_lat"`
 	EndLng      int64     `db:"end_lng"`
 	Distance    float64   `db:"distance"`
-	BatteryUsed int       `db:"battery_used"`
+	BatteryUsed float64   `db:"battery_used"`
 	CreatedAt   time.Time `db:"created_at"`
 	Payload     float64   `db:"payload"`
 }

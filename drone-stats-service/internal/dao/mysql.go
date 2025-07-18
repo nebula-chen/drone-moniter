@@ -24,7 +24,7 @@ func NewMySQLDao(dsn string) (*MySQLDao, error) {
 }
 
 // 保存飞行记录
-func (d *MySQLDao) SaveFlightRecord(orderID, uasID string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance float64, batteryUsed int) error {
+func (d *MySQLDao) SaveFlightRecord(orderID, uasID string, startTime, endTime time.Time, start_lat, start_lng, end_lat, end_lng int64, distance, batteryUsed float64) error {
 	_, err := d.DB.Exec(
 		`INSERT INTO flight_records (
 			orderID,
@@ -167,11 +167,11 @@ func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string)
 	var records []map[string]interface{}
 	for rows.Next() {
 		var (
-			id, batteryUsed, payload, expressCount int
-			orderID, uasID                         string
-			startTime, endTime, createdAt          sql.NullTime
-			startLat, startLng, endLat, endLng     sql.NullInt64
-			distance                               sql.NullFloat64
+			id, payload, expressCount          int
+			orderID, uasID                     string
+			startTime, endTime, createdAt      sql.NullTime
+			startLat, startLng, endLat, endLng sql.NullInt64
+			distance, batteryUsed              sql.NullFloat64
 		)
 		err := rows.Scan(&id, &orderID, &uasID, &startTime, &endTime, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt, &payload, &expressCount)
 		if err != nil {
@@ -188,7 +188,7 @@ func (d *MySQLDao) QueryFlightRecords(orderID, uasID, startTime, endTime string)
 			"end_lat":      endLat.Int64,
 			"end_lng":      endLng.Int64,
 			"distance":     distance.Float64,
-			"battery_used": batteryUsed,
+			"battery_used": batteryUsed.Float64,
 			"created_at":   createdAt.Time.Format("2006-01-02 15:04:05"),
 			"payload":      payload,
 			"expressCount": expressCount,
@@ -390,7 +390,7 @@ func (d *MySQLDao) GetPayloadStats() (yearStats, monthStats, dayStats []map[stri
 
 // 统计平均飞行时长（秒）、平均耗电量、平均载货量、平均速度
 func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgPayload float64, avgGS float64, err error) {
-	var avgTimeNull, avgSOCNull, avgPayloadNull, avgGSNull sql.NullFloat64
+	var avgTimeNull, avgEnergyNull, avgPayloadNull, avgGSNull sql.NullFloat64
 	row := d.DB.QueryRow(`
         SELECT 
             AVG(TIMESTAMPDIFF(SECOND, start_time, end_time)) as avg_time,
@@ -400,12 +400,12 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgPayload fl
         FROM flight_records
         WHERE end_time IS NOT NULL AND battery_used IS NOT NULL
     `)
-	err = row.Scan(&avgTimeNull, &avgSOCNull, &avgPayloadNull, &avgGSNull)
+	err = row.Scan(&avgTimeNull, &avgEnergyNull, &avgPayloadNull, &avgGSNull)
 	if avgTimeNull.Valid {
 		avgTime = avgTimeNull.Float64
 	}
-	if avgSOCNull.Valid {
-		avgSOC = avgSOCNull.Float64
+	if avgEnergyNull.Valid {
+		avgSOC = avgEnergyNull.Float64
 	}
 	if avgPayloadNull.Valid {
 		avgPayload = avgPayloadNull.Float64

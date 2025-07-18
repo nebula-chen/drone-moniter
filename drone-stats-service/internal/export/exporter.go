@@ -28,7 +28,7 @@ func ExportFlightRecordsToCSV(records []types.FlightRecord, filename string) err
 			fmt.Sprintf("%d", r.EndLng),
 			fmt.Sprintf("%d", r.EndLat),
 			fmt.Sprintf("%.2f", r.Distance),
-			fmt.Sprintf("%d", r.BatteryUsed),
+			fmt.Sprintf("%.2f", r.BatteryUsed),
 		})
 	}
 	return nil
