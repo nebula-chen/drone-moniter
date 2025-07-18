@@ -329,7 +329,7 @@
                 if (val === undefined || val === null) return 0;
                 let num = Number(val);
                 if (!isFinite(num) || isNaN(num)) return 0;
-                return num.toFixed(1);
+                return num.toFixed(2);
             }
             if (type === 'year') {
                 xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
@@ -352,7 +352,7 @@
                 series: [{ name: '耗电量', data: yAxis }]
             });
             // 保留两位小数显示
-            $('#total-count-soc').text('总数：' + total.toFixed(1)).show();
+            $('#total-count-soc').text('总数：' + total.toFixed(2)).show();
         }
 
 		let cachedSOCStats = null;
@@ -471,9 +471,9 @@
 					// 平均飞行时间(min)，后端单位为秒，前端转为分钟，保留两位小数
 					$('.visual_rightCon_box:eq(1) p').text((res.avgFlightTime / 60).toFixed(2) + ' min');
 					// 平均耗电(百分比)，保留两位小数
-					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(1) + 'A.h');
+					$('.visual_rightCon_box:eq(2) p').text(res.avgBatteryUsed.toFixed(2) + ' kWh');
 					// 平均载货量(kg)，后端未提供，显示 "--"
-					$('.visual_rightCon_box:eq(3) p').text(res.avgPayload.toFixed(1) + 'kg');
+					$('.visual_rightCon_box:eq(3) p').text(res.avgPayload.toFixed(1) + ' kg');
 				},
 				error: function() {
 					$('.visual_rightCon_box:eq(0) p').text('--');
@@ -663,10 +663,14 @@
 				let distArr = [0];
 				let altArr = [];
 				let RMArr = [];
+				let voltageArr = [];
+				let currentArr = [];
 				for (let i = 0; i < points.length; i++) {
 					let pt = points[i];
 					altArr.push((pt.Altitude || pt.altitude || 0) / 10);
-					RMArr.push(pt.RM !== undefined ? pt.RM : (pt.rm !== undefined ? pt.rm : '--'));
+					RMArr.push(pt.RM || pt.rm || 0);
+					voltageArr.push(pt.Voltage || pt.voltage || 0);
+					currentArr.push(pt.Current || pt.current || 0);
 					if (i > 0) {
 						let prev = points[i-1];
 						let d = calcDistance(
@@ -724,13 +728,12 @@
 			let landingStart = cruiseEnd;
             let landingEnd = points ? points.length - 1 : yArr.length - 1;
 
-            // 4. 计算耗电量（RM 可能为字符串'--'，需判断）
-            function getRM(idx) {
-                let v = RMArr && RMArr[idx];
-                return (v !== undefined && v !== '--') ? parseFloat(v) : null;
+            // 4. 计算耗电量（积分法，单位kWh）
+            let takeoffUsed = '--', landingUsed = '--';
+            if (points && points.length > 0) {
+                takeoffUsed = calcEnergyKWhSection(points, 0, takeoffEnd);
+                landingUsed = calcEnergyKWhSection(points, landingStart, landingEnd);
             }
-            let takeoffUsed = (getRM(0) !== null && getRM(takeoffEnd) !== null) ? (getRM(0) - getRM(takeoffEnd)).toFixed(2) : '--';
-            let landingUsed = (getRM(landingStart) !== null && getRM(landingEnd) !== null) ? (getRM(landingStart) - getRM(landingEnd)).toFixed(2) : '--';
 
             // 5. 高亮起飞/降落区间
             let markAreaData = [];
@@ -793,7 +796,7 @@
 
             // 6. 展示耗电量
             let infoHtml = `<div style="color:#fff;text-align:center;margin-top:10%;">
-				起飞耗电：${takeoffUsed} A.h　|　降落耗电：${landingUsed} A.h
+				起飞耗电：${takeoffUsed} kWh　|　降落耗电：${landingUsed} kWh
 			</div>`;
             $('#altitude-curve-echart').next('.altitude-curve-info').remove();
             $('#altitude-curve-echart').after(`<div class="altitude-curve-info">${infoHtml}</div>`);
@@ -810,6 +813,20 @@
 				Math.cos(radLat1)*Math.cos(radLat2)*Math.pow(Math.sin(b/2),2)));
 			s = s * R;
 			return Math.abs(s);
+		}
+
+		// 计算指定区间轨迹点的耗电量（单位：kWh）
+		function calcEnergyKWhSection(points, startIdx, endIdx) {
+			let totalWh = 0;
+			for (let i = startIdx; i <= endIdx; i++) {
+				let pt = points[i];
+				let voltage = pt.Voltage || pt.voltage || 0; // mV
+				let current = pt.Current || pt.current || 0; // mA
+				let voltageV = voltage / 1000.0;
+				let currentA = current / 1000.0;
+				totalWh += voltageV * currentA / 3600.0; // 1秒积分
+			}
+			return (totalWh / 1000.0).toFixed(4); // kWh，保留4位小数
 		}
 	</script>
 </body>

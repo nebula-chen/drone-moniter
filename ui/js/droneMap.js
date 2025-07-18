@@ -816,7 +816,7 @@ window.addEventListener('load', function() {
                     }
                 }
             }
-            document.getElementById('panel-batteryUsed').textContent = (batteryUsed !== undefined && payload !== null ? batteryUsed + 'A.h' : '--');
+            document.getElementById('panel-batteryUsed').textContent = (batteryUsed !== undefined && payload !== null ? batteryUsed.toFixed(2) + 'kWh' : '--');
             document.getElementById('panel-payload').textContent = (payload !== undefined && payload !== null ? (payload / 10) + 'kg' : '--');
             document.getElementById('panel-expressCount').textContent = (expressCount !== undefined && expressCount !== null ? expressCount + '件' : '--');
 
