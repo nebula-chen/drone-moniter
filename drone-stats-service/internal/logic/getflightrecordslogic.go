@@ -202,20 +202,28 @@ func haversine(lat1, lng1, lat2, lng2 float64) float64 {
 func calcEnergyKWh(points []map[string]interface{}) float64 {
 	var totalEnergyWh float64
 	for _, p := range points {
-		voltage := 0
-		current := 0
-		if v, ok := p["voltage"].(int); ok {
+		voltage := 0.0
+		current := 0.0
+		// 支持多种类型
+		switch v := p["voltage"].(type) {
+		case int:
+			voltage = float64(v)
+		case int64:
+			voltage = float64(v)
+		case float64:
 			voltage = v
 		}
-		if c, ok := p["current"].(int); ok {
+		switch c := p["current"].(type) {
+		case int:
+			current = float64(c)
+		case int64:
+			current = float64(c)
+		case float64:
 			current = c
 		}
-		// 转换为V和A
-		voltageV := float64(voltage) / 1000.0
-		currentA := float64(current) / 1000.0
-		// 每个点时间间隔为1秒，Wh = V * A * (1/3600)
+		voltageV := voltage / 1000.0
+		currentA := current / 1000.0
 		totalEnergyWh += voltageV * currentA / 3600.0
 	}
-	// 转换为kWh
 	return totalEnergyWh / 1000.0
 }
