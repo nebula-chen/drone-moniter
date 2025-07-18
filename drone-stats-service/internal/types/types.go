@@ -26,7 +26,7 @@ type FlightRecord struct {
 	EndLat       int64   `json:"end_lat"`      // 降落纬度
 	EndLng       int64   `json:"end_lng"`      // 降落经度
 	Distance     float64 `json:"distance"`     // 飞行距离，单位：米（m）
-	BatteryUsed  float64 `json:"battery_used"` // 耗电量，单位：千瓦时（kWh）
+	BatteryUsed  float64 `json:"battery_used"` // 耗电量，单位：安时（A.h）
 	CreatedAt    string  `json:"created_at"`
 	Payload      int     `json:"payload"`      // 载货量，单位：千克（kg）精确到小数点后 1 位，乘 10 后传输
 	ExpressCount int     `json:"expressCount"` // 票数，单位：票
@@ -91,6 +91,8 @@ type TrackPoints struct {
 	Course       int    `json:"course"`       // 无人驾驶航空器当前时刻所在位置真北方向顺时针量至地速方向的夹角，范围（0 度，360 度］。暂不具备航迹角测算能力的型号产品，应报送默认值 999.0”精确到小数点后 1位，乘 10 后传输
 	SOC          int    `json:"SOC"`          // 电池电量百分比，最大为 100 代表100%，若无电量数据则传输 0（如使用非智能电池）
 	RM           int    `json:"RM"`           // 电池电量信息，单位 A.h，正整数传输，若无电量数据传输 0（如使用非智能电池）
+	Voltage      int    `json:"voltage"`      // 电池电压信息，单位 mV，正整数传输，若无电压数据传输 0（如未采集BMS 电压值）1V=1000mV
+	Current      int    `json:"current"`      // 电池电流信息，单位 mA，正整数传输，若无电流数据传输 0（如未采集电流值）1A=1000mA
 	WindSpeed    int    `json:"windSpeed"`    // 风速，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
 	WindDirect   int    `json:"windDirect"`   // 风向，单位：米每秒（m/s）,精确到小数点后 1 位，乘 10 后传输
 	Temperture   int    `json:"temperture"`   // 温度值，单位：℃，整数
