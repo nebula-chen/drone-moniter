@@ -42,7 +42,7 @@ func (l *QueryFlightRecordsLogic) QueryFlightRecords(req *types.FlightRecordReq)
 			EndLat:       r["end_lat"].(int64),
 			EndLng:       r["end_lng"].(int64),
 			Distance:     r["distance"].(float64),
-			BatteryUsed:  r["battery_used"].(int),
+			BatteryUsed:  r["battery_used"].(float64),
 			CreatedAt:    r["created_at"].(string),
 			Payload:      r["payload"].(int),
 			ExpressCount: r["expressCount"].(int),
