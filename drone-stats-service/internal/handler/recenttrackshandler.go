@@ -60,6 +60,8 @@ func RecentTracksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 					Course:       pt["course"].(int),
 					SOC:          pt["SOC"].(int),
 					RM:           pt["RM"].(int),
+					Voltage:      pt["voltage"].(int),
+					Current:      pt["current"].(int),
 					WindSpeed:    pt["windSpeed"].(int),
 					WindDirect:   pt["windDirect"].(int),
 					Temperture:   pt["temperture"].(int),

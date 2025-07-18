@@ -419,7 +419,7 @@ func (d *MySQLDao) GetAvgStats() (avgTime float64, avgSOC float64, avgPayload fl
 // 查询某条飞行记录的所有轨迹点
 func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interface{}, error) {
 	rows, err := d.DB.Query(`
-        SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, windSpeed, windDirect, temperture, humidity
+        SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, voltage, current, windSpeed, windDirect, temperture, humidity
         FROM flight_track_points
         WHERE orderID = ?
         ORDER BY timeStamp ASC
@@ -431,16 +431,15 @@ func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interf
 	var points []map[string]interface{}
 	for rows.Next() {
 		var (
-			id                                int64
-			orderID, flightStatus             string
-			timeStamp                         time.Time
-			longitude, latitude               int64
-			heightType, height, altitude      int
-			VS, GS, course, SOC, RM           int
-			windSpeed, windDirect, temperture int
-			humidity                          int
+			id                                          int64
+			orderID, flightStatus                       string
+			timeStamp                                   time.Time
+			longitude, latitude                         int64
+			heightType, height, altitude                int
+			VS, GS, course, SOC, RM, voltage, current   int
+			windSpeed, windDirect, temperture, humidity int
 		)
-		err := rows.Scan(&id, &orderID, &flightStatus, &timeStamp, &longitude, &latitude, &heightType, &height, &altitude, &VS, &GS, &course, &SOC, &RM, &windSpeed, &windDirect, &temperture, &humidity)
+		err := rows.Scan(&id, &orderID, &flightStatus, &timeStamp, &longitude, &latitude, &heightType, &height, &altitude, &VS, &GS, &course, &SOC, &RM, &voltage, &current, &windSpeed, &windDirect, &temperture, &humidity)
 		if err == nil {
 			points = append(points, map[string]interface{}{
 				"orderID":      orderID,
@@ -456,6 +455,8 @@ func (d *MySQLDao) GetTrackPointsByRecordId(orderID string) ([]map[string]interf
 				"course":       course,
 				"SOC":          SOC,
 				"RM":           RM,
+				"voltage":      voltage,
+				"current":      current,
 				"windSpeed":    windSpeed,
 				"windDirect":   windDirect,
 				"temperture":   temperture,

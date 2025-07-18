@@ -753,7 +753,7 @@
                         let dist = xArr[idx] || '--';
                         let alt = yArr[idx] || '--';
                         let RM = RMArr && RMArr[idx] !== undefined ? RMArr[idx] : '--';
-                        return `距离：${dist} km<br/>海拔：${alt} m<br/>电量：${RM} A.h`;
+                        return `距离：${dist} km<br/>海拔：${alt} m<br/>电量：${(RM / 1000).toFixed(2)} A.h`;
                     },
                     backgroundColor: 'rgba(16,54,87,0.98)',
                     borderColor: '#20dbfd',
