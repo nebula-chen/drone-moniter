@@ -275,15 +275,12 @@ func (d *MySQLDao) GetFlightRecordsStats() (yearStats, monthStats, dayStats []ma
 	return
 }
 
-// 按年、月、日统计单位距离单位载重耗电量（distance或payload为0时按1处理）
+// 按年、月、日统计净电能（battery_used总和）
 func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
 	// 年统计
 	rows, err := d.DB.Query(`
         SELECT DATE_FORMAT(start_time, '%Y') as date, 
-        SUM(battery_used / 
-            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
-        ) as total 
+        SUM(battery_used) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
 	if err != nil {
@@ -301,10 +298,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 	// 月统计
 	rows2, err := d.DB.Query(`
         SELECT DATE_FORMAT(start_time, '%Y-%m') as date, 
-        SUM(battery_used / 
-            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
-        ) as total 
+        SUM(battery_used) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
 	if err != nil {
@@ -322,10 +316,7 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 	// 日统计
 	rows3, err := d.DB.Query(`
         SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, 
-        SUM(battery_used / 
-            (CASE WHEN distance=0 OR distance IS NULL THEN 1 ELSE distance/1000 END) / 
-            (CASE WHEN payload=0 OR payload IS NULL THEN 1 ELSE payload/10 END)
-        ) as total 
+        SUM(battery_used) as total 
         FROM flight_records 
         GROUP BY date ORDER BY date`)
 	if err != nil {
@@ -337,6 +328,85 @@ func (d *MySQLDao) GetSOCUsageStats() (yearStats, monthStats, dayStats []map[str
 		var total float64
 		if err := rows3.Scan(&date, &total); err == nil {
 			dayStats = append(dayStats, map[string]interface{}{"date": date, "total": total})
+		}
+	}
+	return
+}
+
+// 按年、月、日统计总电能/总距离/总载重（distance或payload为0时正常处理，为null按0处理）
+func (d *MySQLDao) GetAvgSOCPerDistancePayloadStats() (yearStats, monthStats, dayStats []map[string]interface{}, err error) {
+	// 年统计
+	rows, err := d.DB.Query(`
+        SELECT 
+            DATE_FORMAT(start_time, '%Y') as date,
+            SUM(battery_used) as total_battery,
+            SUM(IFNULL(distance,0)/1000) as total_distance,
+            SUM(IFNULL(payload,0)/10) as total_payload
+        FROM flight_records
+        GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var date string
+		var totalBattery, totalDistance, totalPayload float64
+		if err := rows.Scan(&date, &totalBattery, &totalDistance, &totalPayload); err == nil {
+			var avg float64
+			if totalDistance != 0 && totalPayload != 0 {
+				avg = totalBattery / totalDistance / totalPayload
+			}
+			yearStats = append(yearStats, map[string]interface{}{"date": date, "avg": avg})
+		}
+	}
+
+	// 月统计
+	rows2, err := d.DB.Query(`
+        SELECT 
+            DATE_FORMAT(start_time, '%Y-%m') as date,
+            SUM(battery_used) as total_battery,
+            SUM(IFNULL(distance,0)/1000) as total_distance,
+            SUM(IFNULL(payload,0)/10) as total_payload
+        FROM flight_records
+        GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var date string
+		var totalBattery, totalDistance, totalPayload float64
+		if err := rows2.Scan(&date, &totalBattery, &totalDistance, &totalPayload); err == nil {
+			var avg float64
+			if totalDistance != 0 && totalPayload != 0 {
+				avg = totalBattery / totalDistance / totalPayload
+			}
+			monthStats = append(monthStats, map[string]interface{}{"date": date, "avg": avg})
+		}
+	}
+
+	// 日统计
+	rows3, err := d.DB.Query(`
+        SELECT 
+            DATE_FORMAT(start_time, '%Y-%m-%d') as date,
+            SUM(battery_used) as total_battery,
+            SUM(IFNULL(distance,0)/1000) as total_distance,
+            SUM(IFNULL(payload,0)/10) as total_payload
+        FROM flight_records
+        GROUP BY date ORDER BY date`)
+	if err != nil {
+		return
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var date string
+		var totalBattery, totalDistance, totalPayload float64
+		if err := rows3.Scan(&date, &totalBattery, &totalDistance, &totalPayload); err == nil {
+			var avg float64
+			if totalDistance != 0 && totalPayload != 0 {
+				avg = totalBattery / totalDistance / totalPayload
+			}
+			dayStats = append(dayStats, map[string]interface{}{"date": date, "avg": avg})
 		}
 	}
 	return

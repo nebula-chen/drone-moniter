@@ -40,7 +40,7 @@
 	</div>
 	<div class="visual">
 		<div class="visual_left">
-			<div class="visual_box stat-box" id="flight-stat-box">
+			<div class="stat-box" id="flight-stat-box">
 				<div class="visual_title">
 					<span>飞行架次统计</span>
 					<img src="images/ksh33.png">
@@ -55,8 +55,24 @@
 					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
 				</div>
 			</div>
+			<!-- 运输货量统计 -->
+			<div class="stat-box" id="payload-stat-box">
+				<div class="visual_title">
+					<span>运输货量统计</span>
+					<img src="images/ksh33.png">
+				</div>
+				<div class="stat-header">
+					<span class="stat-type" id="payload-stat-type">日货量</span>
+					<span class="total-count" id="total-count-payload">总数：0</span>
+				</div>
+				<div class="visual_chart stat-chart-area" id="main_payload-area">
+					<button class="stat-switch-btn stat-switch-prev" type="button">&lt;</button>
+					<div id="main_payload" style="height:100%;"></div>
+					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
+				</div>
+			</div>
 			<!-- 飞行耗电统计 -->
-			<div class="visual_box stat-box" id="soc-stat-box">
+			<div class="stat-box" id="soc-stat-box">
 				<div class="visual_title">
 					<span>飞行耗电统计</span>
 					<img src="images/ksh33.png">
@@ -71,19 +87,19 @@
 					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
 				</div>
 			</div>
-			<!-- 运输货量统计 -->
-			<div class="visual_box stat-box" id="payload-stat-box">
+			<!-- 单位距离单位载重耗电统计 -->
+			<div class="stat-box" id="soc-avg-stat-box">
 				<div class="visual_title">
-					<span>运输货量统计</span>
+					<span>单位距离单位载重耗电统计</span>
 					<img src="images/ksh33.png">
 				</div>
 				<div class="stat-header">
-					<span class="stat-type" id="payload-stat-type">日货量</span>
-					<span class="total-count" id="total-count-payload">总数：0</span>
+					<span class="stat-type" id="soc-avg-stat-type">日统计</span>
+					<span class="total-count" id="total-count-soc-avg">总数：0</span>
 				</div>
-				<div class="visual_chart stat-chart-area" id="main_payload-area">
+				<div class="visual_chart stat-chart-area" id="main_soc_avg-area">
 					<button class="stat-switch-btn stat-switch-prev" type="button">&lt;</button>
-					<div id="main_payload" style="height:100%;"></div>
+					<div id="main_soc_avg" style="height:100%;"></div>
 					<button class="stat-switch-btn stat-switch-next" type="button">&gt;</button>
 				</div>
 			</div>
@@ -356,9 +372,9 @@
         }
 
 		let cachedSOCStats = null;
-		function loadSOCUsageStats(type = 'day') {
+		function loadSOCUsageStats(type = 'day', mode = '') {
 			$.ajax({
-				url: "/record/SOCUsage",
+				url: "/record/SOCUsage?mode=" + mode,
 				type: "GET",
 				success: function(res) {
 					cachedSOCStats = res;
@@ -458,6 +474,77 @@
 		$('#main_payload-area .stat-switch-next').click(function() {
 			payloadStatIndex = (payloadStatIndex + 1) % payloadStatTypes.length;
 			updatePayloadStatType();
+		});
+
+		// ================== 运输货量统计 ================== //
+		var optionSOCAvg = JSON.parse(JSON.stringify(option1));
+		optionSOCAvg.series[0].name = '单位距离单位载重耗电';
+		optionSOCAvg.title.text = '';
+		optionSOCAvg.series[0].data = [];
+		optionSOCAvg.xAxis.data = [];
+		
+		function updateSOCAvgChart(type, stats) {
+			let xAxis = [];
+			let yAxis = [];
+			let total = 0;
+			function parseUsage(val) {
+				if (val === undefined || val === null) return 0;
+				let num = Number(val);
+				if (!isFinite(num) || isNaN(num)) return 0;
+				return num.toFixed(4); // 保留4位小数
+			}
+			if (type === 'year') {
+				xAxis = (stats.yearStats || stats.YearStats || []).map(item => item.date);
+				yAxis = (stats.yearStats || stats.YearStats || []).map(item => parseUsage(item.usage || item.Usage));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else if (type === 'month') {
+				xAxis = (stats.monthStats || stats.MonthStats || []).map(item => item.date.slice(5));
+				yAxis = (stats.monthStats || stats.MonthStats || []).map(item => parseUsage(item.usage || item.Usage));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			} else {
+				const dayStats = (stats.dayStats || stats.DayStats || []);
+				const last5 = dayStats.slice(-5);
+				xAxis = last5.map(item => item.date.slice(5));
+				yAxis = last5.map(item => parseUsage(item.usage || item.Usage));
+				total = yAxis.reduce((a, b) => a + parseFloat(b), 0);
+			}
+			myChartSOCAvg.setOption({
+				xAxis: { data: xAxis },
+				series: [{ name: '单位距离单位载重耗电', data: yAxis }]
+			});
+			$('#total-count-soc-avg').text('总数：' + total.toFixed(4)).show();
+		}
+		
+		let cachedSOCAvgStats = null;
+		function loadSOCAvgUsageStats(type = 'day') {
+			$.ajax({
+				url: "/record/SOCUsage?mode=avg",
+				type: "GET",
+				success: function(res) {
+					cachedSOCAvgStats = res;
+					updateSOCAvgChart(type, res);
+				}
+			});
+		}
+		
+		// 统计类型配置
+		const socAvgStatTypes = [
+			{ type: 'day', label: '日统计' },
+			{ type: 'month', label: '月统计' },
+			{ type: 'year', label: '年统计' }
+		];
+		let socAvgStatIndex = 0;
+		function updateSOCAvgStatType() {
+			$('#soc-avg-stat-type').text(socAvgStatTypes[socAvgStatIndex].label);
+			if (cachedSOCAvgStats) updateSOCAvgChart(socAvgStatTypes[socAvgStatIndex].type, cachedSOCAvgStats);
+		}
+		$('#main_soc_avg-area .stat-switch-prev').click(function() {
+			socAvgStatIndex = (socAvgStatIndex + socAvgStatTypes.length - 1) % socAvgStatTypes.length;
+			updateSOCAvgStatType();
+		});
+		$('#main_soc_avg-area .stat-switch-next').click(function() {
+			socAvgStatIndex = (socAvgStatIndex + 1) % socAvgStatTypes.length;
+			updateSOCAvgStatType();
 		});
 
 		// ================== 平均统计 ================== //
@@ -612,25 +699,31 @@
 			updatePayloadStatType();
 			loadAvgStats(); // 加载平均统计
 			loadFlightRecords(); // 加载飞行记录
+			loadSOCAvgUsageStats(); // 默认加载单位距离单位载重耗电统计
+			updateSOCAvgStatType();
 
 			setInterval(loadFlightStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadOnlineCount, 10 * 1000); // 每10秒刷新一次在线架次
-			setInterval(loadRecordsTimeSeries, 5 * 60 * 1000); // 每2小时刷新一次
-			setInterval(loadSOCUsageStats, 5 * 60 * 1000); // 每2小时刷新一次
-			setInterval(loadPayloadStats, 5 * 60 * 1000); // 每2小时刷新一次
+			setInterval(loadRecordsTimeSeries, 5 * 60 * 1000); // 每5分钟刷新一次
+			setInterval(loadPayloadStats, 5 * 60 * 1000); // 每5分钟刷新一次
+			setInterval(loadSOCUsageStats, 5 * 60 * 1000); // 每5分钟刷新一次
+			setInterval(loadSOCAvgUsageStats, 5 * 60 * 1000); // 每5分钟刷新一次
 			setInterval(loadAvgStats, 2 * 3600 * 1000); // 每2小时刷新一次
-			setInterval(loadFlightRecords, 5 * 60 * 1000); // 每2小时刷新一次
+			setInterval(loadFlightRecords, 5 * 60 * 1000); // 每5分钟刷新一次
 		})
 
 		// 飞行架次统计图表配置
 		var myChart1 = echarts.init(document.getElementById('main1'));
 		myChart1.setOption(option1);
-		// 飞行耗电统计图表配置
-		var myChartSOC = echarts.init(document.getElementById('main_soc'));
-		myChartSOC.setOption(optionSOC);
 		// 运输货量统计图表配置
 		var myChartPayload = echarts.init(document.getElementById('main_payload'));
 		myChartPayload.setOption(optionPayload);
+		// 飞行耗电统计图表配置
+		var myChartSOC = echarts.init(document.getElementById('main_soc'));
+		myChartSOC.setOption(optionSOC);
+		// 单位距离单位载重耗电统计图表配置
+		var myChartSOCAvg = echarts.init(document.getElementById('main_soc_avg'));
+		myChartSOCAvg.setOption(optionSOCAvg);
 
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		myChart3.setOption(option3);

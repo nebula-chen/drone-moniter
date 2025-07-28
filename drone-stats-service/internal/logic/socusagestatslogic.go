@@ -23,29 +23,59 @@ func NewSOCUsageStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SOC
 	}
 }
 
-func (l *SOCUsageStatsLogic) SOCUsageStats() (resp *types.SOCUsageStatsResp, err error) {
-	yearStats, monthStats, dayStats, err := l.svcCtx.MySQLDao.GetSOCUsageStats()
-	if err != nil {
-		return nil, err
-	}
-	resp = &types.SOCUsageStatsResp{}
-	for _, y := range yearStats {
-		resp.YearStats = append(resp.YearStats, types.SOCUsage{
-			Date:  y["date"].(string),
-			Usage: y["total"].(float64),
-		})
-	}
-	for _, m := range monthStats {
-		resp.MonthStats = append(resp.MonthStats, types.SOCUsage{
-			Date:  m["date"].(string),
-			Usage: m["total"].(float64),
-		})
-	}
-	for _, d := range dayStats {
-		resp.DayStats = append(resp.DayStats, types.SOCUsage{
-			Date:  d["date"].(string),
-			Usage: d["total"].(float64),
-		})
+func (l *SOCUsageStatsLogic) SOCUsageStats(mode string) (resp *types.SOCUsageStatsResp, err error) {
+	var (
+		yearStats, monthStats, dayStats []map[string]interface{}
+	)
+	switch mode {
+	case "avg":
+		yearStats, monthStats, dayStats, err = l.svcCtx.MySQLDao.GetAvgSOCPerDistancePayloadStats()
+		if err != nil {
+			return nil, err
+		}
+		resp = &types.SOCUsageStatsResp{}
+		for _, y := range yearStats {
+			resp.YearStats = append(resp.YearStats, types.SOCUsage{
+				Date:  y["date"].(string),
+				Usage: y["avg"].(float64),
+			})
+		}
+		for _, m := range monthStats {
+			resp.MonthStats = append(resp.MonthStats, types.SOCUsage{
+				Date:  m["date"].(string),
+				Usage: m["avg"].(float64),
+			})
+		}
+		for _, d := range dayStats {
+			resp.DayStats = append(resp.DayStats, types.SOCUsage{
+				Date:  d["date"].(string),
+				Usage: d["avg"].(float64),
+			})
+		}
+	default:
+		yearStats, monthStats, dayStats, err = l.svcCtx.MySQLDao.GetSOCUsageStats()
+		if err != nil {
+			return nil, err
+		}
+		resp = &types.SOCUsageStatsResp{}
+		for _, y := range yearStats {
+			resp.YearStats = append(resp.YearStats, types.SOCUsage{
+				Date:  y["date"].(string),
+				Usage: y["total"].(float64),
+			})
+		}
+		for _, m := range monthStats {
+			resp.MonthStats = append(resp.MonthStats, types.SOCUsage{
+				Date:  m["date"].(string),
+				Usage: m["total"].(float64),
+			})
+		}
+		for _, d := range dayStats {
+			resp.DayStats = append(resp.DayStats, types.SOCUsage{
+				Date:  d["date"].(string),
+				Usage: d["total"].(float64),
+			})
+		}
 	}
 	return
 }

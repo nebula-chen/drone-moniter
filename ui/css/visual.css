@@ -509,9 +509,13 @@ html, body, form{overflow-y:auto;height:100%;}
 
 /* 统计模块头部布局 */
 .stat-box {
-    position: relative;
-    margin-bottom: 12px;
+    height:25%;
+    gap: 6px;
 }
+.stat-box .visual_title{position:relative;height:35px;margin:5px 0;}
+.stat-box .visual_title span{color:#fff;font-size:18px;line-height:35px;}
+.stat-box .visual_title img{width:100%;position:absolute;left:0;bottom:0;}
+.stat-box .visual_chart{height:calc(100% - 35px);}
 .stat-header {
     display: flex;
     align-items: center;
