@@ -592,9 +592,11 @@
 			const pageData = records.slice(startIdx, endIdx);
 
 			pageData.forEach(function(rec) {
+				const orderId = rec.OrderID || rec.orderID;
+				const isActive = (orderId === window.currentHighlightedOrderID) ? 'record-panel-active' : '';
 				const html = `
-				<div class="record-panel" data-id="${rec.OrderID || rec.orderID}">
-					<p>编号: <span>${(rec.OrderID || rec.orderID).slice(-8)}</span></p>
+				<div class="record-panel ${isActive}" data-id="${orderId}">
+					<p>编号: <span>${orderId.slice(-8)}</span></p>
 					<p>开始时间: <span>${rec.StartTime || rec.start_time}</span></p>
 				</div>`;
 				$list.append(html);
@@ -602,6 +604,8 @@
 			// 点击事件：绘制轨迹并展示三面板
 			$list.find('.record-panel').click(function() {
 				const id = $(this).data('id');
+				window.currentHighlightedOrderID = id; // 用全局变量
+				renderFlightRecords(allFlightRecords); // 重新渲染高亮
 				if (droneMap && typeof droneMap.showTrackByRecordId === 'function') {
 					droneMap.showTrackByRecordId(id);
 				} else {
@@ -611,6 +615,10 @@
 
 			renderFlightRecordsPagination(records.length);
 		}
+
+		// 将参数及方法暴露到全局，供其他模块使用
+		window.renderFlightRecords = renderFlightRecords;
+		window.allFlightRecords = allFlightRecords;
 
 		// 渲染分页控件（前端分页）
 		function renderFlightRecordsPagination(total) {
@@ -654,11 +662,13 @@
 					// 兼容不同字段名
 					let records = res.flightrecords || res.flightRecords || [];
 					allFlightRecords = records;
+					window.allFlightRecords = allFlightRecords; // 新增：同步到window
 					flightRecordsPage = 1; // 每次查询重置到第一页
 					renderFlightRecords(allFlightRecords);
 				},
 				error: function() {
 					allFlightRecords = [];
+					window.allFlightRecords = allFlightRecords; // 新增：同步到window
 					renderFlightRecords([]);
 				}
 			});
@@ -822,9 +832,10 @@
             let landingEnd = points ? points.length - 1 : yArr.length - 1;
 
             // 4. 计算耗电量（积分法，单位kWh）
-            let takeoffUsed = '--', landingUsed = '--';
+            let takeoffUsed = '--', cruiseUsed = '--', landingUsed = '--';
             if (points && points.length > 0) {
                 takeoffUsed = calcEnergyKWhSection(points, 0, takeoffEnd);
+				cruiseUsed = calcEnergyKWhSection(points, takeoffEnd, cruiseEnd);
                 landingUsed = calcEnergyKWhSection(points, landingStart, landingEnd);
             }
 
@@ -889,7 +900,7 @@
 
             // 6. 展示耗电量
             let infoHtml = `<div style="color:#fff;text-align:center;margin-top:10%;">
-				起飞耗电：${takeoffUsed} kWh　|　降落耗电：${landingUsed} kWh
+				起飞耗电: ${takeoffUsed}kWh | 巡航耗电: ${cruiseUsed}kWh | 降落耗电: ${landingUsed}kWh
 			</div>`;
             $('#altitude-curve-echart').next('.altitude-curve-info').remove();
             $('#altitude-curve-echart').after(`<div class="altitude-curve-info">${infoHtml}</div>`);

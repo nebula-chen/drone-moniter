@@ -1,5 +1,7 @@
 let droneMap; // 全局变量以便于在事件处理程序中访问
 
+window.currentHighlightedOrderID = null;
+
 window.addEventListener('load', function() {
     if (typeof AMap === 'undefined') {
         console.error('高德地图API加载失败');
@@ -523,6 +525,14 @@ window.addEventListener('load', function() {
                     let i = 0;
                     // 关键：设置当前orderID
                     this.currentOrderID = recordIds[idx];
+
+                    // === 新增：同步高亮到飞行记录列表 ===
+                    window.currentHighlightedOrderID = recordIds[idx];
+                    if (typeof window.renderFlightRecords === 'function' && window.allFlightRecords) {
+                        window.renderFlightRecords(window.allFlightRecords);
+                    }
+                    // === 新增结束 ===
+
                     const animate = () => {
                         if (this._trackPlayMode !== 'auto') return; // 若被打断则退出
                         if (i < points.length) {
@@ -535,7 +545,7 @@ window.addEventListener('load', function() {
                             // 刷新三面板
                             this.updateInfoPanel(points[i]);
                             i++;
-                            this._trackPlayTimer = setTimeout(animate, 100); // 每个点间隔半秒
+                            this._trackPlayTimer = setTimeout(animate, 10); // 每个点间隔10毫秒
                         } else {
                             idx++;
                             this._trackPlayTimer = setTimeout(drawNextTrack, 2000); // 每条轨迹绘制完后间隔2秒
@@ -549,13 +559,26 @@ window.addEventListener('load', function() {
             }
         }
         
-        // 新增：根据飞行记录ID绘制轨迹并展示首条点数据
+        // 新增：根据飞行记录ID绘制轨迹并展示数据
         async showTrackByRecordId(recordId) {
             this._stopTrackAnimation();
             this._trackPlayMode = 'manual';
             // 关键：设置当前orderID
             this.currentOrderID = recordId;
+
+            // === 新增：同步高亮到飞行记录列表 ===
+            window.currentHighlightedOrderID = recordId;
+            if (typeof window.renderFlightRecords === 'function' && window.allFlightRecords) {
+                window.renderFlightRecords(window.allFlightRecords);
+            }
+            // === 新增结束 ===
+
             this._autoResumeTimer = setTimeout(() => {
+                this.clearAllPaths();
+                window.currentHighlightedOrderID = null;
+                if (typeof window.renderFlightRecords === 'function' && window.allFlightRecords) {
+                    window.renderFlightRecords(window.allFlightRecords);
+                }
                 this.showRecentTracksAnimated();
             }, 1 * 60 * 1000);
 
@@ -592,7 +615,7 @@ window.addEventListener('load', function() {
                             this.map.setCenter([points[0].lng, points[0].lat]);
                         }
                         i++;
-                        this._trackPlayTimer = setTimeout(animate, 100);
+                        this._trackPlayTimer = setTimeout(animate, 10);
                     }
                 };
                 animate();

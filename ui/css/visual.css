@@ -391,6 +391,11 @@ html, body, form{overflow-y:auto;height:100%;}
     backdrop-filter: blur(8px);
     border: 1px solid #1380bd;
 }
+.record-panel-active {
+    border: 2px solid #20dbfd;
+    background: rgba(32,219,253,0.08);
+    box-shadow: 0 0 8px #20dbfd;
+}
 .record-panel p {
     color: #fff;
     font-size: 16px;
@@ -512,7 +517,7 @@ html, body, form{overflow-y:auto;height:100%;}
     height:25%;
     gap: 6px;
 }
-.stat-box .visual_title{position:relative;height:35px;margin:5px 0;}
+.stat-box .visual_title{position:relative;height:35px;}
 .stat-box .visual_title span{color:#fff;font-size:18px;line-height:35px;}
 .stat-box .visual_title img{width:100%;position:absolute;left:0;bottom:0;}
 .stat-box .visual_chart{height:calc(100% - 35px);}
@@ -520,7 +525,7 @@ html, body, form{overflow-y:auto;height:100%;}
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 28px;
+    height: 20px;
     padding: 0 10px;
     position: relative;
     background: transparent;
