@@ -599,14 +599,8 @@ window.addEventListener('load', function() {
             }
             // === 新增结束 ===
 
-            this._autoResumeTimer = setTimeout(() => {
-                this.clearAllPaths();
-                window.currentHighlightedOrderID = null;
-                if (typeof window.renderFlightRecords === 'function' && window.allFlightRecords) {
-                    window.renderFlightRecords(window.allFlightRecords);
-                }
-                this.showRecentTracksAnimated();
-            }, 1 * 60 * 1000);
+            // 移除原有的30秒自动恢复定时器
+            // this._autoResumeTimer = setTimeout(() => { ... }, 30 * 1000);
 
             try {
                 const res = await fetch(`/record/recentTracks?orderID=${recordId}`);
@@ -625,6 +619,20 @@ window.addEventListener('load', function() {
                 const color = this.getColorByRecordId(recordId);
                 let path = [];
                 let i = 0;
+
+                // 新增：5秒无操作自动轮播定时器
+                const startAutoResumeTimer = () => {
+                    if (this._autoResumeTimer) clearTimeout(this._autoResumeTimer);
+                    this._autoResumeTimer = setTimeout(() => {
+                        this.clearAllPaths();
+                        window.currentHighlightedOrderID = null;
+                        if (typeof window.renderFlightRecords === 'function' && window.allFlightRecords) {
+                            window.renderFlightRecords(window.allFlightRecords);
+                        }
+                        this.showRecentTracksAnimated();
+                    }, 5000); // 5秒
+                };
+
                 const animate = () => {
                     if (this._trackPlayMode !== 'manual') return; // 若被打断则退出
                     if (i < points.length) {
@@ -642,6 +650,9 @@ window.addEventListener('load', function() {
                         }
                         i++;
                         this._trackPlayTimer = setTimeout(animate, 10);
+                    } else {
+                        // 轨迹绘制完毕，启动5秒无操作自动轮播
+                        startAutoResumeTimer();
                     }
                 };
                 animate();
