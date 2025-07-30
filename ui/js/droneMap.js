@@ -293,7 +293,8 @@ window.addEventListener('load', function() {
                     self.fp_camera.up.set(...up);
                     self.fp_camera.lookAt(...lookAt);
                     self.fp_camera.updateProjectionMatrix();
-                    
+
+                    // 不要调用 clear()，只渲染
                     self.fp_renderer.render(self.fp_scene, self.fp_camera);
                     self.fp_renderer.resetState();
                 }
@@ -458,7 +459,7 @@ window.addEventListener('load', function() {
         
         // 新增：利用THREE更新3D轨迹（与当前recordId对应）
         updateFlightPath3D(recordId, path) {
-            // 使用customCoords工具将每个[lng, lat]点转换为3D坐标，并使用altitude值进行Z轴偏移
+            // 1. 生成three.js的Vector3数组
             const points = path.map(pt => {
                 const [lng, lat, altitude] = pt;
                 // customCoords.lngLatsToCoords 接受二维数组
@@ -467,23 +468,48 @@ window.addEventListener('load', function() {
                 coord[2] = altitude;
                 return new THREE.Vector3(coord[0], coord[1], coord[2]);
             });
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ 
-                color: new THREE.Color(this.getColorByRecordId(recordId)),  // 使用recordId生成颜色
-            });
-            if (this.flightPath3DLines.has(recordId)) {
-                // 更新已有3D轨迹线的几何数据
-                const line = this.flightPath3DLines.get(recordId);
-                line.geometry.dispose();    // 释放旧的几何体资源
-                line.geometry = geometry;   // 更新几何体
 
-                this.flightPathLayer.show(); // 间接触发3D渲染
-            } else {
-                // 新建轨迹线对象
-                const line = new THREE.Line(geometry, material);
-                this.flightPathGroup.add(line);
-                this.flightPath3DLines.set(recordId, line);
+            // 2. 用TubeGeometry加粗轨迹
+            if (points.length < 2) return;
+            const curve = new THREE.CatmullRomCurve3(points);
+            const geometry = new THREE.TubeGeometry(curve, Math.max(points.length * 2, 20), 6, 8, false); // 8为粗细
+
+            const color = new THREE.Color(this.getColorByRecordId(recordId));
+            const material = new THREE.MeshBasicMaterial({ color });
+
+            // 4. 删除旧的轨迹
+            if (this.flightPath3DLines && this.flightPath3DLines.has(recordId)) {
+                const oldMesh = this.flightPath3DLines.get(recordId);
+                this.flightPathGroup.remove(oldMesh);
+                oldMesh.geometry.dispose();
+                oldMesh.material.dispose();
+                this.flightPath3DLines.delete(recordId);
             }
+
+            // 5. 添加新轨迹
+            const mesh = new THREE.Mesh(geometry, material);
+            this.flightPathGroup.add(mesh);
+            if (!this.flightPath3DLines) this.flightPath3DLines = new Map();
+            this.flightPath3DLines.set(recordId, mesh);
+
+            // 6. 删除旧箭头
+            if (!this.flightPath3DArrows) this.flightPath3DArrows = new Map();
+            if (this.flightPath3DArrows.has(recordId)) {
+                const oldArrow = this.flightPath3DArrows.get(recordId);
+                this.flightPathGroup.remove(oldArrow);
+                this.flightPath3DArrows.delete(recordId);
+            }
+
+            // 7. 添加新箭头（在轨迹终点）
+            const dir = points[points.length - 1].clone().sub(points[points.length - 2]).normalize();
+            const origin = points[points.length - 1];
+            const headLength = 18; // 锥体长度
+            const headWidth = 24;  // 锥体宽度
+            const arrowHelper = new THREE.ArrowHelper(dir, origin, headLength, color.getHex(), headLength, headWidth);
+            this.flightPathGroup.add(arrowHelper);
+            this.flightPath3DArrows.set(recordId, arrowHelper);
+
+            this.flightPathLayer.show();
         }
         
         // 新增：获取最近3条飞行记录并动画绘制轨迹
@@ -665,6 +691,16 @@ window.addEventListener('load', function() {
                     this.flightPathGroup.remove(this.flightPathGroup.children[0]);
                 }
                 this.flightPath3DLines.clear();
+            }
+
+            // 新增-清除3D轨迹箭头
+            if (this.flightPath3DArrows) {
+                this.flightPath3DArrows.forEach(arrow => {
+                    if (this.flightPathGroup) {
+                        this.flightPathGroup.remove(arrow);
+                    }
+                });
+                this.flightPath3DArrows.clear();
             }
         }
         
