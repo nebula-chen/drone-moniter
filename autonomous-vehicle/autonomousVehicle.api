@@ -1,0 +1,216 @@
+// goctl api go -api autonomousVehicle.api -dir .
+// 新增：在线架次响应体
+type OnlineCountResp {
+	Count int `json:"count"`
+}
+
+type Position {
+	Lon float64 `json:"lon"`
+	Lat float64 `json:"lat"`
+}
+
+type GetVehicleListReq {
+	UserId string `form:"userId"`
+}
+
+type VehicleList {
+	Vin       string `json:"vin"`
+	VinId     string `json:"vinId"`
+	VinCode   string `json:"vinCode"`
+	ParkCode  string `json:"parkCode"`
+	ParkName  string `json:"parkName"`
+	CabinCode string `json:"cabinCode"`
+}
+
+type GetVehicleListResp {
+	Data []VehicleList `json:"data"`
+	Code string        `json:"code"`
+	Msg  string        `json:"msg"`
+}
+
+type GetVehicleInfoReq {
+	Vin string `form:"vin"`
+}
+
+type VehicleInfo {
+	Vin            string   `json:"vin"`
+	VinId          string   `json:"vinId"`
+	DriveMode      int      `json:"driveMode"`
+	Gear           string   `json:"gear"`
+	Speed          float64  `json:"speed"`
+	AccelerationV  float64  `json:"accelerationV"`
+	AccelerationH  float64  `json:"accelerationH"`
+	GnssHead       float64  `json:"gnssHead"`
+	Position       Position `json:"position"`
+	Electricity    int      `json:"electricity"`
+	FrontBattery   int      `json:"frontBattery"`
+	RealBattery    int      `json:"realBattery"`
+	Mile           float64  `json:"Mile"`
+	OccurTimestamp int64    `json:"occurTimestamp"`
+	PowerState     bool     `json:"powerState"`
+	ParkCode       string   `json:"parkCode"`
+	ParkName       string   `json:"parkName"`
+}
+
+type GetVehicleInfoResp {
+	Data VehicleInfo `json:"data"`
+	Code string      `json:"code"`
+	Msg  string      `json:"msg"`
+}
+
+type GetVehicleStationReq {
+	Vin string `form:"vin"`
+}
+
+type VehicleStation {
+	Lng         float64 `json:"lng"`
+	StationName string  `json:"stationName"`
+	Lat         float64 `json:"lat"`
+	StationID   int     `json:"stationId"`
+	ParkCode    string  `json:"parkCode"`
+	ParkName    string  `json:"parkName"`
+}
+
+type GetVehicleStationResq {
+	Data []VehicleStation `json:"data"`
+	Code string           `json:"code"`
+	Msg  string           `json:"msg"`
+}
+
+type GetCurrentMissionReq {
+	Vin string `json:"vin"`
+}
+
+type MissionData {
+	MissionSubId     int    `json:"missionSubId"`
+	Vin              string `json:"vin"`
+	StartStationId   int    `json:"startStationId"`
+	StartStationName string `json:"startStationName"`
+	EndStationId     int    `json:"endStationId"`
+	EndStationName   string `json:"endStationName"`
+	MissionStatus    int    `json:"missionStatus"`
+}
+
+type GetCurrentMissionResp {
+	Code string      `json:"code"`
+	Msg  string      `json:"msg"`
+	Data MissionData `json:"data"`
+}
+
+type GetPlanningRouteReq {
+	Vin string `json:"vin"`
+}
+
+type PlanningRoute {
+	RouteId   int         `json:"routeId"`
+	Route     interface{} `json:"route"`
+	RouteName string      `json:"routeName"`
+	Distance  int         `json:"distance"`
+	RoutePath interface{} `json:"routePath"`
+}
+
+type GetPlanningRouteResp {
+	Data    []PlanningRoute `json:"data"`
+	Code    string          `json:"code"`
+	Msg     string          `json:"msg"`
+	Success bool            `json:"success"`
+}
+
+type GetMissionBySubIdReq {
+	MissionSubId int `json:"missionSubId"`
+}
+
+type GetMissionBySubIdResp {
+	Code string      `json:"code"`
+	Msg  string      `json:"msg"`
+	Data MissionData `json:"data"`
+}
+
+type GetMileageAndDurationReq {
+	Vin          string `json:"vin"`
+	MissionSubId int    `json:"missionSubId"`
+}
+
+type MileageAndDurationData {
+	Vin          string `json:"vin"`
+	MissionSubId int    `json:"missionSubId"`
+	Mileage      int    `json:"mileage"`
+	Duration     int    `json:"duration"`
+}
+
+type GetMileageAndDurationResp {
+	Code string                 `json:"code"`
+	Msg  string                 `json:"msg"`
+	Data MileageAndDurationData `json:"data"`
+}
+
+type GetVehicleInfoListReq {
+	Vin []string `json:"vin"`
+}
+
+type VehicleInfoListItem {
+	Vin               string   `json:"vin"`
+	VinId             string   `json:"vinId"`
+	DriveMode         int      `json:"driveMode"`
+	Gear              string   `json:"gear"`
+	Speed             float64  `json:"speed"`
+	AccelerationV     float64  `json:"acceleration_V"`
+	AccelerationH     float64  `json:"acceleration_H"`
+	GnssHead          float64  `json:"gnssHead"`
+	Position          Position `json:"position"`
+	VehicleAvailable  int      `json:"vehicleAvailable"`
+	RealBattery       int      `json:"realBattery"`
+	BatteryHealth     int      `json:"batteryHealth"`
+	Mile              float64  `json:"mile"`
+	OccurTimestamp    int64    `json:"occurTimestamp"`
+	PowerState        bool     `json:"powerState"`
+	ParkCode          string   `json:"parkcode"`
+	ParkName          string   `json:"parkname"`
+	FaultStatus       int      `json:"faultStatus"`
+	ChargingStatus    int      `json:"chargingStatus"`
+	ChargingGunStatus int      `json:"chargingGunStatus"`
+	LfPressure        float64  `json:"lfPressure"`
+	RfPressure        float64  `json:"rfPressure"`
+	LrPressure        float64  `json:"lrPressure"`
+	RrPressure        float64  `json:"rrPressure"`
+	CabinStatus       int      `json:"cabinStatus"`
+}
+
+type GetVehicleInfoListResp {
+	Data []VehicleInfoListItem `json:"data"`
+	Code string                `json:"code"`
+	Msg  string                `json:"msg"`
+}
+
+service autonomousVehicle {
+	@handler HandleWebSocket
+	get /vehicle/ws
+
+	@handler HandleOnlineCount
+	get /vehicle/online_count returns (OnlineCountResp)
+
+	@handler HandleGetVehicleList
+	get /vehicle/list (GetVehicleListReq) returns (GetVehicleListResp)
+
+	@handler HandleGetVehicleInfo
+	post /vehicle/info (GetVehicleInfoReq) returns (GetVehicleInfoResp)
+
+	@handler HandleGetVehicleStation
+	post /vehicle/station (GetVehicleStationReq) returns (GetVehicleStationResq)
+
+	@handler HandleGetCurrentMission
+	post /vehicle/current_mission (GetCurrentMissionReq) returns (GetCurrentMissionResp)
+
+	@handler HandleGetPlanningRoute
+	post /vehicle/planning_route (GetPlanningRouteReq) returns (GetPlanningRouteResp)
+
+	@handler HandleGetMissionBySubId
+	post /vehicle/mission_by_subid (GetMissionBySubIdReq) returns (GetMissionBySubIdResp)
+
+	@handler HandleGetMileageAndDuration
+	post /vehicle/mileage_and_duration (GetMileageAndDurationReq) returns (GetMileageAndDurationResp)
+
+	@handler HandleGetVehicleInfoList
+	post /vehicle/info_list (GetVehicleInfoListReq) returns (GetVehicleInfoListResp)
+}
+

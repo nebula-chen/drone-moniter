@@ -1,0 +1,17 @@
+services:
+  vehicle-service:
+    build: .
+    container_name: vehicle-service
+    ports:
+      - "8060:8060"
+    volumes:
+      - ./log:/app/log  # 数据持久化目录
+    environment:
+      - TZ=Asia/Shanghai   # 可选：设置时区
+    networks:
+      - my-network
+    restart: always
+
+networks:
+  my-network:
+    external: true  # 声明使用外部网络
