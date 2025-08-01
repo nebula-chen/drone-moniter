@@ -2,6 +2,7 @@
 /drone-api/log
 /drone-client/client
 /drone-stats-service/log
+/autonomous-vehicle/log
 /drone-stats-service/mysql_data
 /influxDB/influxdb2
 
