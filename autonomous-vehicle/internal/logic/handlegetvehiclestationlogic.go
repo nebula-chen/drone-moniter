@@ -33,7 +33,8 @@ func (l *HandleGetVehicleStationLogic) HandleGetVehicleStation(req *types.GetVeh
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://scapi.test.neolix.net/openapi-server/slvapi/GetVehicleStation/v1?signature=%s&timeStamp=%s&nonce=%s&access_token=%s&vin=%s",
+	// 测试环境:https://scapi.test.neolix.net/ 正式环境:https://scapi.neolix.net/
+	url := fmt.Sprintf("https://scapi.neolix.net/openapi-server/slvapi/GetVehicleStation/v1?signature=%s&timeStamp=%s&nonce=%s&access_token=%s&vin=%s",
 		signature, timestamp, nonce, token, req.Vin)
 
 	httpReq, err := http.NewRequest("POST", url, nil)

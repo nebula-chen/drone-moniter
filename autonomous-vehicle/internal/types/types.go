@@ -66,7 +66,7 @@ type GetVehicleInfoResp struct {
 }
 
 type GetVehicleListReq struct {
-	UserId string `form:"userId"`
+	UserId string `form:"userId,optional"`
 }
 
 type GetVehicleListResp struct {

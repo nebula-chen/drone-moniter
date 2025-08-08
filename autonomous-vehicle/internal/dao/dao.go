@@ -1,10 +1,7 @@
 package dao
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"autonomous-vehicle/internal/types"
@@ -36,13 +33,15 @@ func NewInfluxDao(client influxdb2.Client, org, bucket string) *InfluxDao {
 }
 
 func (d *InfluxDao) AddPoint(point *write.Point) error {
+	// fmt.Printf("[InfluxDao] 写入数据点: %v\n", point) // 日志输出
 	d.WriteAPI.WritePoint(point)
 	return nil
 }
 
 func (d *InfluxDao) BuildPoint(vehicleInfo *types.VehicleInfo) (*write.Point, error) {
-	// 协议时间戳为秒级，需转为 time.Time
-	utcTime := time.Unix(vehicleInfo.OccurTimestamp, 0).UTC()
+	// fmt.Printf("[InfluxDao] 构建数据点, VIN: %s, 时间戳: %d\n", vehicleInfo.Vin, vehicleInfo.OccurTimestamp) // 日志输出
+	// 协议时间戳为毫秒级，需转为 time.Time
+	utcTime := time.Unix(vehicleInfo.OccurTimestamp/1000, (vehicleInfo.OccurTimestamp%1000)*int64(time.Millisecond)).UTC()
 
 	point := write.NewPoint("vehicle_info",
 		map[string]string{
@@ -72,52 +71,16 @@ func (d *InfluxDao) BuildPoint(vehicleInfo *types.VehicleInfo) (*write.Point, er
 }
 
 func (d *InfluxDao) Close() {
+	// fmt.Println("[InfluxDao] 关闭 InfluxDB 连接，刷新数据...") // 日志输出
 	d.WriteAPI.Flush()
 	d.InfluxWriter.Close()
 }
 
-// 通过 vin 调用 getVehicleInfo 协议接口获取车辆状态
-func (d *InfluxDao) GetVehicleInfoByVin(
-	vin string,
-	xFrom string,
-	xVersion string,
-	genSignParams func() (string, string, string, string, error),
-) (*types.VehicleInfo, error) {
-	timestamp, nonce, signature, token, err := genSignParams()
-	if err != nil {
-		return nil, err
-	}
-
-	url := fmt.Sprintf("https://scapi.test.neolix.net/openapi-server/slvapi/getVehicleInfo?signature=%s&timeStamp=%s&nonce=%s&access_token=%s&vin=%s",
-		signature, timestamp, nonce, token, vin)
-
-	httpReq, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("X-From", xFrom)
-	httpReq.Header.Set("X-Version", xVersion)
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-
-	var result types.GetVehicleInfoResp
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, err
-	}
-	if result.Code != "10000" {
-		return nil, fmt.Errorf("getVehicleInfo failed: %s", result.Msg)
-	}
-	return &result.Data, nil
-}
-
 func (d *InfluxDao) SaveVehicleInfo(vehicleInfo *types.VehicleInfo) error {
+	// fmt.Printf("[InfluxDao] 保存车辆信息, VIN: %s\n", vehicleInfo.Vin) // 日志输出
 	point, err := d.BuildPoint(vehicleInfo)
 	if err != nil {
+		// fmt.Printf("[InfluxDao] 构建数据点失败: %v\n", err)
 		return err
 	}
 	return d.AddPoint(point)

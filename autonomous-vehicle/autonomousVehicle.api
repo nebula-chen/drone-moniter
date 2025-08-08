@@ -10,7 +10,7 @@ type Position {
 }
 
 type GetVehicleListReq {
-	UserId string `form:"userId"`
+	UserId string `form:"userId,optional"`
 }
 
 type VehicleList {
@@ -189,28 +189,28 @@ service autonomousVehicle {
 	@handler HandleOnlineCount
 	get /vehicle/online_count returns (OnlineCountResp)
 
-	@handler HandleGetVehicleList
+	@handler HandleGetVehicleList	// 拉取车辆列表
 	get /vehicle/list (GetVehicleListReq) returns (GetVehicleListResp)
 
-	@handler HandleGetVehicleInfo
+	@handler HandleGetVehicleInfo	// 拉取车辆状态信息
 	post /vehicle/info (GetVehicleInfoReq) returns (GetVehicleInfoResp)
 
-	@handler HandleGetVehicleStation
+	@handler HandleGetVehicleStation	// 拉取车辆所属网点下的所有停靠点
 	post /vehicle/station (GetVehicleStationReq) returns (GetVehicleStationResq)
 
-	@handler HandleGetCurrentMission
+	@handler HandleGetCurrentMission	// 拉取车辆当前任务详情
 	post /vehicle/current_mission (GetCurrentMissionReq) returns (GetCurrentMissionResp)
 
-	@handler HandleGetPlanningRoute
+	@handler HandleGetPlanningRoute		// 拉取车辆规划路线
 	post /vehicle/planning_route (GetPlanningRouteReq) returns (GetPlanningRouteResp)
 
-	@handler HandleGetMissionBySubId
+	@handler HandleGetMissionBySubId	// 根据任务id拉取任务详情​
 	post /vehicle/mission_by_subid (GetMissionBySubIdReq) returns (GetMissionBySubIdResp)
 
-	@handler HandleGetMileageAndDuration
+	@handler HandleGetMileageAndDuration	// 根据任务id拉取任务总时长、总里程
 	post /vehicle/mileage_and_duration (GetMileageAndDurationReq) returns (GetMileageAndDurationResp)
 
-	@handler HandleGetVehicleInfoList
+	@handler HandleGetVehicleInfoList	// 批量拉取车辆状态数据
 	post /vehicle/info_list (GetVehicleInfoListReq) returns (GetVehicleInfoListResp)
 }
 

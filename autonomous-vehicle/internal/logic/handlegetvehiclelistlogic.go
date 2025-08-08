@@ -33,8 +33,12 @@ func (l *HandleGetVehicleListLogic) HandleGetVehicleList(req *types.GetVehicleLi
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://scapi.test.neolix.net/openapi-server/slvapi/getVehicleList?signature=%s&timeStamp=%s&nonce=%s&access_token=%s&userId=%s",
-		signature, timestamp, nonce, token, req.UserId)
+	// 测试环境:https://scapi.test.neolix.net/ 正式环境:https://scapi.neolix.net/
+	url := fmt.Sprintf("https://scapi.neolix.net/openapi-server/slvapi/getVehicleList?signature=%s&timeStamp=%s&nonce=%s&access_token=%s",
+		signature, timestamp, nonce, token)
+	if req.UserId != "" {
+		url += fmt.Sprintf("&userId=%s", req.UserId)
+	}
 
 	httpReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -42,6 +46,12 @@ func (l *HandleGetVehicleListLogic) HandleGetVehicleList(req *types.GetVehicleLi
 	}
 	httpReq.Header.Set("X-From", l.svcCtx.Config.XFrom)
 	httpReq.Header.Set("X-Version", l.svcCtx.Config.XVersion)
+
+	// 输出组装好的 http 报文到日志
+	l.Infof("HTTP Request: %s %s", httpReq.Method, httpReq.URL.String())
+	for k, v := range httpReq.Header {
+		l.Infof("Header: %s: %v", k, v)
+	}
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {

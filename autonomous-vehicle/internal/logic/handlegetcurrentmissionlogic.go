@@ -34,7 +34,8 @@ func (l *HandleGetCurrentMissionLogic) HandleGetCurrentMission(req *types.GetCur
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://scapi.test.neolix.net/openapi-server/slvapi/getCurrentMission?signature=%s&timeStamp=%s&nonce=%s&access_token=%s",
+	// 测试环境:https://scapi.test.neolix.net/ 正式环境:https://scapi.neolix.net/
+	url := fmt.Sprintf("https://scapi.neolix.net/openapi-server/slvapi/getCurrentMission?signature=%s&timeStamp=%s&nonce=%s&access_token=%s",
 		signature, timestamp, nonce, token)
 
 	bodyBytes, _ := json.Marshal(map[string]string{"vin": req.Vin})

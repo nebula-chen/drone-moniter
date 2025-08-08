@@ -16,8 +16,9 @@ InfluxDBConfig:
   BatchSize: 100
   FlushInterval: 5
 
-XFrom: "your-business-unique-id"
+XFrom: "sysu"
 XVersion: "0.0.0"
-TokenURL: "https://scapi.test.neolix.net/auth/oauth/token"
-ClientID: "zlt"
-ClientSecret: "zlt"
+# TokenURL: "https://scapi.test.neolix.net/auth/oauth/token"
+TokenURL: "https://scapi.neolix.net/auth/oauth/token"
+ClientID: "zsdx"
+ClientSecret: "3ba51abd-56d9-4869-a7fb-057c8c7977e5"
