@@ -184,3 +184,8 @@ type VehicleStation struct {
 	ParkCode    string  `json:"parkCode"`
 	ParkName    string  `json:"parkName"`
 }
+
+type ExportVehicleRecordsReq struct {
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+}

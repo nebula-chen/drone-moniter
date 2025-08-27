@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,11 +10,14 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"github.com/xuri/excelize/v2"
 )
 
 type InfluxDao struct {
 	InfluxWriter influxdb2.Client
 	WriteAPI     api.WriteAPI
+	QueryAPI     api.QueryAPI
+	Bucket       string
 }
 
 func NewInfluxDao(client influxdb2.Client, org, bucket string) *InfluxDao {
@@ -29,6 +33,8 @@ func NewInfluxDao(client influxdb2.Client, org, bucket string) *InfluxDao {
 	return &InfluxDao{
 		InfluxWriter: client,
 		WriteAPI:     writeAPI,
+		QueryAPI:     client.QueryAPI(org),
+		Bucket:       bucket,
 	}
 }
 
@@ -84,4 +90,52 @@ func (d *InfluxDao) SaveVehicleInfo(vehicleInfo *types.VehicleInfo) error {
 		return err
 	}
 	return d.AddPoint(point)
+}
+
+// QueryVehicleData 查询指定时间范围内的 vehicle_info 数据
+func (d *InfluxDao) QueryVehicleData(start, end time.Time) ([]map[string]interface{}, error) {
+	query := fmt.Sprintf(`
+		from(bucket:"%s")
+		|> range(start: %s, stop: %s)
+		|> filter(fn: (r) => r._measurement == "vehicle_info")
+		|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+	`, d.Bucket, start.Format(time.RFC3339), end.Format(time.RFC3339))
+
+	result, err := d.QueryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	var records []map[string]interface{}
+	for result.Next() {
+		records = append(records, result.Record().Values())
+	}
+	return records, result.Err()
+}
+
+// ExportVehicleRecordsToExcel 将查询结果导出为 Excel 文件
+func ExportVehicleRecordsToExcel(records []map[string]interface{}, filePath string) error {
+	f := excelize.NewFile()
+	sheet := "Sheet1"
+	headers := []string{}
+	if len(records) > 0 {
+		for k := range records[0] {
+			headers = append(headers, k)
+		}
+		// 写表头
+		for i, h := range headers {
+			cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+			f.SetCellValue(sheet, cell, h)
+		}
+		// 写数据
+		for rowIdx, rec := range records {
+			for colIdx, h := range headers {
+				cell, _ := excelize.CoordinatesToCellName(colIdx+1, rowIdx+2)
+				f.SetCellValue(sheet, cell, rec[h])
+			}
+		}
+	}
+	if err := f.SaveAs(filePath); err != nil {
+		return err
+	}
+	return nil
 }

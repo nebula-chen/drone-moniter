@@ -64,6 +64,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/vehicle/ws",
 				Handler: HandleWebSocketHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/vehicle/export",
+				Handler: ExportVehicleRecordsHandler(serverCtx),
+			},
 		},
 	)
 }

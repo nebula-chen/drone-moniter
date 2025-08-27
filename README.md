@@ -29,7 +29,6 @@ docker-compose --version
 ```Shell
 # 如果 index.html 有修改则需要同步至 nginx
 # 把 index.html 移动到 nginx 默认网站根目录
-sudo cp ./nginx_drone.conf  /etc/nginx/sites-enabled
 sudo mkdir /var/www/html/api
 sudo mkdir /var/www/html/stats
 sudo cp ./drone-api/resources/index.html /var/www/html/api

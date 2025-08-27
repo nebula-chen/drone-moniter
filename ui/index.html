@@ -744,15 +744,18 @@
 				delay: 5000,//5秒切换一次
 			},
 		})
-	</script>
-	<script type="text/javascript">
+
+
 		// ========== 高度曲线功能 ==========
 		$('#altitudeCurve').click(function() {
 			// 显示曲线容器
 			$('#altitude-curve-chart').fadeIn(200);
 
 			// 优先获取当前orderID
-			let orderID = (window.droneMap && typeof droneMap.getCurrentOrderID === 'function') ? droneMap.getCurrentOrderID() : null;
+			let orderID = window.currentHighlightedOrderID;
+			if (!orderID || orderID === undefined || orderID === 'undefined' || orderID === null) {
+				orderID = ''; // 如果未定义，则设置为空字符串
+			}
 
 			let url = orderID ? `/record/recentTracks?orderID=${orderID}` : '/record/recentTracks?n=1';
 			$.get(url, function(res) {
@@ -866,7 +869,7 @@
                 },
                 xAxis: {
                     type: 'category',
-                    name: '飞行距离(m)',
+                    name: '飞行距离(km)',
                     nameLocation: 'middle',
                     nameGap: 30,
                     data: xArr,
