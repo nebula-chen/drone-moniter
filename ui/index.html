@@ -26,6 +26,17 @@
 <!-- <script src="js/chartMap.js"></script> -->
 <link rel="stylesheet" type="text/css" href="css/visual.css">
 
+<!-- 样式：控制统计类型（年/月/日）显示与高亮（中文注释） -->
+<style>
+	/* 统计类型容器，内部每个字使用内联块排列并添加间距 */
+	.stat-type { color: #fff; font-weight: 600; }
+	.stat-type > span { display: inline-block; margin: 0 6px; padding: 2px 6px; cursor: pointer; border-radius: 4px; color: #cfeefd; }
+	/* 高亮样式 */
+	.stat-type > span.stat-type-active { background: #20dbfd; color: #00323a; }
+	/* 禁用选择，避免点选时选中文字 */
+	.stat-type { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+</style>
+
 </head>
 <body class="ksh">
 	<div id="load">
@@ -46,7 +57,12 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="stat-header">
-					<span class="stat-type" id="flight-stat-type">日架次</span>
+					<!-- 将统计类型显示为三个间隔的可点击字：年 / 月 / 日 -->
+					<span class="stat-type" id="flight-stat-type">
+						<span data-type="year">年</span>
+						<span data-type="month">月</span>
+						<span data-type="day">日</span>
+					</span>
 					<span class="total-count" id="total-count-flight">总数：0</span>
 				</div>
 				<div class="visual_chart stat-chart-area" id="main1-area">
@@ -62,7 +78,12 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="stat-header">
-					<span class="stat-type" id="payload-stat-type">日货量</span>
+					<!-- 运输货量统计选择：年/月/日 -->
+					<span class="stat-type" id="payload-stat-type">
+						<span data-type="year">年</span>
+						<span data-type="month">月</span>
+						<span data-type="day">日</span>
+					</span>
 					<span class="total-count" id="total-count-payload">总数：0</span>
 				</div>
 				<div class="visual_chart stat-chart-area" id="main_payload-area">
@@ -78,7 +99,12 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="stat-header">
-					<span class="stat-type" id="soc-stat-type">日耗电</span>
+					<!-- 飞行耗电：年/月/日 -->
+					<span class="stat-type" id="soc-stat-type">
+						<span data-type="year">年</span>
+						<span data-type="month">月</span>
+						<span data-type="day">日</span>
+					</span>
 					<span class="total-count" id="total-count-soc">总数：0</span>
 				</div>
 				<div class="visual_chart stat-chart-area" id="main_soc-area">
@@ -94,7 +120,12 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="stat-header">
-					<span class="stat-type" id="soc-avg-stat-type">日统计</span>
+					<!-- 单位距离单位载重耗电：年/月/日 -->
+					<span class="stat-type" id="soc-avg-stat-type">
+						<span data-type="year">年</span>
+						<span data-type="month">月</span>
+						<span data-type="day">日</span>
+					</span>
 					<span class="total-count" id="total-count-soc-avg">总数：0</span>
 				</div>
 				<div class="visual_chart stat-chart-area" id="main_soc_avg-area">
@@ -177,40 +208,53 @@
 			</div>
 		</div>
 		<div class="visual_right">
-			<div class="visual_box">
+			<div class="visual_box" style="display: contents;">
 				<div class="visual_title">
-					<span>xxx数据统计</span>
+					<span>飞行数据平均统计</span>
 					<img src="images/ksh33.png">
 				</div>
-				<div class="visual_chart" id="main3"></div>
+				<div class="visual_rightCon">
+					<div class="visual_rightCon_box">
+						<div>
+							<h3>平均飞行速度</h3>
+							<p>10.0</p>
+						</div>
+					</div>
+					<div class="visual_rightCon_box">
+						<div>
+							<h3>平均飞行时间</h3>
+							<p>10.0</p>
+						</div>
+					</div>
+					<div class="visual_rightCon_box">
+						<div>
+							<h3>平均耗电</h3>
+							<p>10.0</p>
+						</div>
+					</div>
+					<div class="visual_rightCon_box">
+						<div>
+							<h3>平均载货量</h3>
+							<p>10.0</p>
+						</div>
+					</div>
+				</div>
+				<div class="visual_title">
+					<span>海鑫光起降场</span>
+					<img src="images/ksh33.png">
+				</div>
+				<div class="panel-video" id="vehicle-video">
+					<video id="vehicle-demo-video" class="vehicle-demo-video" src="./test.mp4" autoplay muted loop playsinline controls="false"></video>
+				</div>
+				<div class="visual_title">
+					<span>中大起降场</span>
+					<img src="images/ksh33.png">
+				</div>
+				<div class="panel-video" id="vehicle-video">
+					<video id="vehicle-demo-video" class="vehicle-demo-video" src="./test.mp4" autoplay muted loop playsinline controls="false"></video>
+				</div>
 			</div>
-            <div class="visual_rightCon">
-                <div class="visual_rightCon_box">
-                    <div>
-                        <h3>平均飞行速度</h3>
-                        <p>10.0</p>
-                    </div>
-                </div>
-                <div class="visual_rightCon_box">
-                    <div>
-                        <h3>平均飞行时间</h3>
-                        <p>10.0</p>
-                    </div>
-                </div>
-                <div class="visual_rightCon_box">
-                    <div>
-                        <h3>平均耗电</h3>
-                        <p>10.0</p>
-                    </div>
-                </div>
-                <div class="visual_rightCon_box">
-                    <div>
-                        <h3>平均载货量</h3>
-                        <p>10.0</p>
-                    </div>
-                </div>
-            </div>
-			<div class="visual_box" style="height: 50%;">
+			<div class="visual_box">
 				<div class="visual_title">
 					<span>飞行记录</span>
 					<img src="images/ksh33.png">
@@ -315,10 +359,19 @@
 		];
 		let flightStatIndex = 0; // 默认日架次
 
-		function updateFlightStatType() {
-			$('#flight-stat-type').text(flightStatTypes[flightStatIndex].label);
-			if (cachedStats) updateFlightChart(flightStatTypes[flightStatIndex].type, cachedStats);
-		}
+			// 通用：根据类型数组与索引高亮容器内对应的年/月/日（中文注释）
+			function highlightStatType(containerSelector, types, index) {
+				// 清除所有高亮
+				$(containerSelector).find('span').removeClass('stat-type-active');
+				// 标记当前高亮（匹配 data-type）
+				var curType = types[index].type;
+				$(containerSelector).find('span[data-type="' + curType + '"]').addClass('stat-type-active');
+			}
+
+			function updateFlightStatType() {
+				highlightStatType('#flight-stat-type', flightStatTypes, flightStatIndex);
+				if (cachedStats) updateFlightChart(flightStatTypes[flightStatIndex].type, cachedStats);
+			}
 
 		// 左右切换按钮事件
 		$('#main1-area .stat-switch-prev').click(function() {
@@ -327,6 +380,18 @@
 		});
 		$('#main1-area .stat-switch-next').click(function() {
 			flightStatIndex = (flightStatIndex + 1) % flightStatTypes.length;
+			updateFlightStatType();
+		});
+
+		// 点击年/月/日的事件：同步切换索引并更新（支持键盘/触控点击）
+		$('#flight-stat-type span').click(function() {
+			var t = $(this).data('type');
+			for (var i = 0; i < flightStatTypes.length; i++) {
+				if (flightStatTypes[i].type === t) {
+					flightStatIndex = i;
+					break;
+				}
+			}
 			updateFlightStatType();
 		});
 
@@ -390,10 +455,20 @@
 			{ type: 'year', label: '年耗电' }
 		];
 		let socStatIndex = 0;
+
 		function updateSOCStatType() {
-			$('#soc-stat-type').text(socStatTypes[socStatIndex].label);
+			highlightStatType('#soc-stat-type', socStatTypes, socStatIndex);
 			if (cachedSOCStats) updateSOCChart(socStatTypes[socStatIndex].type, cachedSOCStats);
 		}
+
+		// 点击事件：切换耗电统计的年/月/日
+		$('#soc-stat-type span').click(function() {
+			var t = $(this).data('type');
+			for (var i = 0; i < socStatTypes.length; i++) {
+				if (socStatTypes[i].type === t) { socStatIndex = i; break; }
+			}
+			updateSOCStatType();
+		});
 		$('#main_soc-area .stat-switch-prev').click(function() {
 			socStatIndex = (socStatIndex + socStatTypes.length - 1) % socStatTypes.length;
 			updateSOCStatType();
@@ -463,10 +538,20 @@
 			{ type: 'year', label: '年货量' }
 		];
 		let payloadStatIndex = 0;
+
 		function updatePayloadStatType() {
-			$('#payload-stat-type').text(payloadStatTypes[payloadStatIndex].label);
+			highlightStatType('#payload-stat-type', payloadStatTypes, payloadStatIndex);
 			if (cachedPayloadStats) updatePayloadChart(payloadStatTypes[payloadStatIndex].type, cachedPayloadStats);
 		}
+
+		// 点击事件：切换载货量统计的年/月/日
+		$('#payload-stat-type span').click(function() {
+			var t = $(this).data('type');
+			for (var i = 0; i < payloadStatTypes.length; i++) {
+				if (payloadStatTypes[i].type === t) { payloadStatIndex = i; break; }
+			}
+			updatePayloadStatType();
+		});
 		$('#main_payload-area .stat-switch-prev').click(function() {
 			payloadStatIndex = (payloadStatIndex + payloadStatTypes.length - 1) % payloadStatTypes.length;
 			updatePayloadStatType();
@@ -534,10 +619,20 @@
 			{ type: 'year', label: '年统计' }
 		];
 		let socAvgStatIndex = 0;
+
 		function updateSOCAvgStatType() {
-			$('#soc-avg-stat-type').text(socAvgStatTypes[socAvgStatIndex].label);
+			highlightStatType('#soc-avg-stat-type', socAvgStatTypes, socAvgStatIndex);
 			if (cachedSOCAvgStats) updateSOCAvgChart(socAvgStatTypes[socAvgStatIndex].type, cachedSOCAvgStats);
 		}
+
+		// 点击事件：切换单位距离单位载重耗电统计的年/月/日
+		$('#soc-avg-stat-type span').click(function() {
+			var t = $(this).data('type');
+			for (var i = 0; i < socAvgStatTypes.length; i++) {
+				if (socAvgStatTypes[i].type === t) { socAvgStatIndex = i; break; }
+			}
+			updateSOCAvgStatType();
+		});
 		$('#main_soc_avg-area .stat-switch-prev').click(function() {
 			socAvgStatIndex = (socAvgStatIndex + socAvgStatTypes.length - 1) % socAvgStatTypes.length;
 			updateSOCAvgStatType();
