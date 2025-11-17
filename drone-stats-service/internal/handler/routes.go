@@ -31,6 +31,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodPost,
+				Path:    "/record/exportAsync",
+				Handler: CreateExportTaskHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/record/exportStatus",
+				Handler: ExportStatusHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/record/exportDownload",
+				Handler: ExportDownloadHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
 				Path:    "/record/get",
 				Handler: GetFlightRecordsHandler(serverCtx),
 			},

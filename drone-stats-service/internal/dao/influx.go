@@ -102,25 +102,47 @@ func (d *InfluxDao) GetFlightDate(start, end time.Time) ([]map[string]interface{
 func ExportFlightRecordsToExcel(records []map[string]interface{}, filePath string) error {
 	f := excelize.NewFile()
 	sheet := "Sheet1"
-	headers := []string{}
-	if len(records) > 0 {
-		for k := range records[0] {
-			headers = append(headers, k)
+	if len(records) == 0 {
+		if err := f.SaveAs(filePath); err != nil {
+			return err
 		}
-		// 写表头
-		for i, h := range headers {
-			cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-			f.SetCellValue(sheet, cell, h)
-		}
-		// 写数据
-		for rowIdx, rec := range records {
-			for colIdx, h := range headers {
-				cell, _ := excelize.CoordinatesToCellName(colIdx+1, rowIdx+2)
-				f.SetCellValue(sheet, cell, rec[h])
+		return nil
+	}
+	// 采用与通用导出相同的友好表头策略（简化版）：按 records[0] 的字段顺序写入表头
+	headers := make([]string, 0, len(records[0]))
+	for k := range records[0] {
+		headers = append(headers, k)
+	}
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheet, cell, h)
+	}
+	// 写数据并做基础格式化（时间/经纬度）
+	for rIdx, rec := range records {
+		for cIdx, h := range headers {
+			cell, _ := excelize.CoordinatesToCellName(cIdx+1, rIdx+2)
+			v := rec[h]
+			// 简单格式化常见字段
+			switch h {
+			case "start_time", "end_time", "created_at", "timeStamp":
+				switch t := v.(type) {
+				case time.Time:
+					f.SetCellValue(sheet, cell, t.Format("2006-01-02 15:04:05"))
+					continue
+				}
+			case "start_lat", "start_lng", "end_lat", "end_lng", "longitude", "latitude":
+				switch n := v.(type) {
+				case int64:
+					f.SetCellValue(sheet, cell, float64(n)/1e7)
+					continue
+				case float64:
+					f.SetCellValue(sheet, cell, n/1e7)
+					continue
+				}
 			}
+			f.SetCellValue(sheet, cell, v)
 		}
 	}
-	// 保存文件
 	if err := f.SaveAs(filePath); err != nil {
 		return err
 	}

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>导出飞行数据</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; padding: 20px; background: #f7f7f8; }
+    .card { background: #fff; padding: 18px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); max-width: 720px; margin: 0 auto }
+    .row { display:flex; gap:12px; margin-bottom:12px; align-items:center }
+    label { width:110px; color:#333 }
+    input[type=text], select, input[type=datetime-local] { flex:1; padding:8px; border:1px solid #ddd; border-radius:4px }
+    button { padding:10px 14px; border:0; background:#007bff; color:#fff; border-radius:4px; cursor:pointer }
+    button.secondary { background:#6c757d }
+    pre { background:#f1f1f3; padding:12px; border-radius:4px; max-height:240px; overflow:auto }
+    .actions { display:flex; gap:8px }
+    .notice { font-size:13px; color:#666 }
+    a.download { display:inline-block; margin-top:8px }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>导出飞行数据</h2>
+    <p class="notice">选择时间范围、可选 OrderID 或 uasID，选择导出类型后可同步导出（立即下载）或异步导出（后台生成并返回下载链接）。</p>
+
+    <div class="row">
+      <label for="start">开始时间</label>
+      <input id="start" type="datetime-local">
+    </div>
+    <div class="row">
+      <label for="end">结束时间</label>
+      <input id="end" type="datetime-local">
+    </div>
+    <div class="row">
+      <label for="order">OrderID</label>
+      <input id="order" type="text" placeholder="可选：按架次导出">
+    </div>
+    <div class="row">
+      <label for="uas">UasID</label>
+      <input id="uas" type="text" placeholder="可选：按无人机ID过滤">
+    </div>
+    <div class="row">
+      <label for="target">导出类型</label>
+      <select id="target">
+        <option value="records">records（飞行主表）</option>
+        <option value="trajectory">trajectory（轨迹点）</option>
+        <option value="both">both（两者）</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="btnSync">立即导出（同步）</button>
+      <button id="btnAsync" class="secondary">后台导出（异步）</button>
+      <button id="btnClear" class="secondary">清空</button>
+    </div>
+
+    <h3>任务 / 日志</h3>
+    <div id="statusArea">
+      <pre id="log">未执行任务。</pre>
+    </div>
+
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log')
+    const btnSync = document.getElementById('btnSync')
+    const btnAsync = document.getElementById('btnAsync')
+    const btnClear = document.getElementById('btnClear')
+
+    function appendLog(s){
+      const now = new Date().toLocaleString()
+      logEl.textContent = `[${now}] ` + s + '\n' + logEl.textContent
+    }
+
+    // 读取表单并返回 ISO 时间
+    // 允许用户不填写结束时间：若未填写，前端会自动使用当前时间（即时导出时更友好）
+    function readForm(){
+      const start = document.getElementById('start').value
+      const end = document.getElementById('end').value
+      const OrderID = document.getElementById('order').value.trim()
+      const uasID = document.getElementById('uas').value.trim()
+      const target = document.getElementById('target').value
+      // convert datetime-local to ISO (UTC)
+      const startIso = start ? new Date(start).toISOString() : ''
+      // 如果用户没有填写结束时间，使用当前时间
+      const endIso = end ? new Date(end).toISOString() : new Date().toISOString()
+      const endProvided = !!end
+      return { startIso, endIso, OrderID, uasID, target, endProvided }
+    }
+
+    // 同步导出（直接下载）
+    btnSync.addEventListener('click', async ()=>{
+      // 同步导出：只需保证开始时间存在，结束时间可为空（此时前端会使用当前时间）
+      const { startIso, endIso, OrderID, uasID, target, endProvided } = readForm()
+      if(!startIso){ alert('请填写开始时间'); return }
+      if(!endProvided){ appendLog('未填写结束时间，已自动使用当前时间: ' + endIso) }
+      appendLog('开始同步导出...')
+      try{
+        const body = { startTime: startIso, endTime: endIso, OrderID, uasID, target }
+        const resp = await fetch('/record/export', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        if(!resp.ok){
+          const text = await resp.text()
+          appendLog('同步导出失败: ' + text)
+          return
+        }
+        const disposition = resp.headers.get('Content-Disposition') || ''
+        let filename = 'export.xlsx'
+        const m = /filename=(.*)/i.exec(disposition)
+        if(m){ filename = m[1].replace(/\"/g,'') }
+        const blob = await resp.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+        appendLog('同步导出完成，文件已下载：' + filename)
+      }catch(err){
+        appendLog('同步导出异常: ' + err.message)
+      }
+    })
+
+    // 异步导出（创建任务并轮询）
+    btnAsync.addEventListener('click', async ()=>{
+      // 异步导出：允许不填写结束时间，前端会用当前时间作为结束时间
+      const { startIso, endIso, OrderID, uasID, target, endProvided } = readForm()
+      if(!startIso){ alert('请填写开始时间'); return }
+      if(!endProvided){ appendLog('未填写结束时间，已自动使用当前时间: ' + endIso) }
+      appendLog('创建异步导出任务...')
+      try{
+        const body = { startTime: startIso, endTime: endIso, OrderID, uasID, target }
+        const resp = await fetch('/record/exportAsync', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+        const data = await resp.json()
+        if(!resp.ok){ appendLog('创建任务失败: ' + (data.error||JSON.stringify(data))); return }
+        appendLog('任务创建成功: ' + data.taskId)
+        appendLog('状态查询：' + data.statusUrl)
+        appendLog('下载链接：' + data.downloadUrl)
+        const downloadUrl = data.downloadUrl
+        const statusUrl = data.statusUrl
+
+        // 友好提示：估算导出耗时（前端可根据时间范围和类型给出一个简单提示）
+        try{
+          const start = new Date(startIso)
+          const end = new Date(endIso)
+          const hours = Math.max(0, (end - start) / (1000*60*60))
+          if(hours > 24 || target === 'both'){
+            appendLog('提示：导出时间跨度较大或选择了两份数据，导出可能需要较长时间。后台完成后会自动开始下载（若浏览器允许）。')
+          } else {
+            appendLog('提示：导出请求已提交，若文件已就绪将自动下载。')
+          }
+        }catch(e){ /* ignore parse errors */ }
+
+        // 在页面展示下载链接（供手动下载），并尝试在后台轮询状态再自动触发下载。
+        const aManual = document.createElement('a')
+        aManual.href = downloadUrl
+        aManual.target = '_blank'
+        aManual.rel = 'noopener'
+        aManual.textContent = '下载结果 ('+data.taskId+')'
+        aManual.className = 'download'
+        document.getElementById('statusArea').appendChild(aManual)
+
+        // 轮询策略：仅在状态 URL 可以通过同源或可转为相对路径访问时使用 fetch；否则放弃轮询并依赖用户手动点击下载
+        const canPoll = (() => {
+          try {
+            const u = new URL(statusUrl, location.href)
+            // 如果状态地址与页面同源，直接轮询；否则尝试用相对路径（pathname+search）轮询
+            if(u.origin === location.origin) return u.pathname + u.search
+            // 特殊处理 0.0.0.0 等不可直接访问的主机：转换为相对路径再尝试
+            if(u.hostname === '0.0.0.0' || u.hostname === '::' || u.hostname === '127.0.0.1'){
+              return u.pathname + u.search
+            }
+            // 其余跨域地址，不安全去轮询
+            return null
+          } catch (err) {
+            return null
+          }
+        })()
+
+        if(!canPoll){
+          appendLog('注意：无法通过后台轮询任务状态（跨域或地址不可达）。请在稍后手动点击页面中的下载链接以获取结果。')
+          return
+        }
+
+        appendLog('开始轮询任务状态，等待后台生成文件...')
+        let interval = 3000
+        let attempts = 0
+        const maxAttempts = 600 // 最大轮询次数（约 30 分钟）
+        const poll = setInterval(async ()=>{
+          attempts++
+          try{
+            const sresp = await fetch(canPoll)
+            if(!sresp.ok){
+              appendLog('查询任务状态失败: HTTP ' + sresp.status)
+              if(attempts >= maxAttempts){ appendLog('轮询超时，请稍后手动下载。'); clearInterval(poll) }
+              return
+            }
+            const t = await sresp.json()
+            appendLog('任务状态: ' + t.status)
+            if(t.status === 'done'){
+              appendLog('任务完成，准备开始下载...')
+              // 自动触发下载（使用页面上的手动链接，避免再次创建不必要的锚点）
+              try{
+                aManual.click()
+                appendLog('已触发自动下载。如果浏览器阻止了下载，请手动点击下方链接。')
+              }catch(e){ appendLog('自动触发下载失败，请手动点击链接：' + e.message) }
+              clearInterval(poll)
+            } else if(t.status === 'failed'){
+              appendLog('任务失败: ' + (t.error || '未知错误'))
+              clearInterval(poll)
+            } else {
+              // 未完成，适当增加轮询间隔（backoff），但不超过 30 秒
+              interval = Math.min(30000, interval + 2000)
+              clearInterval(poll)
+              setTimeout(()=>{
+                // 重新启动 poll（使用新的 interval）
+                // 注意：这里使用递归式的 setInterval reset，以实现可变间隔
+                // 启动新的定时器
+                // (简洁实现：重新赋值 poll 变量不可行，这里直接用匿名函数包裹)
+              }, interval)
+            }
+          }catch(err){
+            appendLog('轮询出错: '+err.message+'；可能是跨域或网络问题，已停止自动轮询。')
+            clearInterval(poll)
+          }
+          if(attempts >= maxAttempts){ appendLog('轮询达到最大次数，停止轮询，请稍后手动下载。'); clearInterval(poll) }
+        }, interval)
+      }catch(err){ appendLog('创建任务异常: ' + err.message) }
+    })
+
+    btnClear.addEventListener('click', ()=>{ document.getElementById('start').value=''; document.getElementById('end').value=''; document.getElementById('order').value=''; document.getElementById('uas').value=''; logEl.textContent='未执行任务。' })
+
+  </script>
+</body>
+</html>
