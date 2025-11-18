@@ -264,16 +264,10 @@ func (tm *TaskManager) CleanOlderThan(retainDays int) {
 
 // StatusURL 返回任务状态查询的完整或相对 URL
 func (tm *TaskManager) StatusURL(id string) string {
-	if tm.baseURL != "" {
-		return tm.baseURL + "/record/exportStatus?id=" + id
-	}
 	return "/record/exportStatus?id=" + id
 }
 
 // DownloadURL 返回任务下载的完整或相对 URL
 func (tm *TaskManager) DownloadURL(id string) string {
-	if tm.baseURL != "" {
-		return tm.baseURL + "/record/exportDownload?id=" + id
-	}
 	return "/record/exportDownload?id=" + id
 }
