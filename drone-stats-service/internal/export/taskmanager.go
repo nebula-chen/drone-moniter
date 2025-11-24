@@ -27,6 +27,7 @@ type Task struct {
 	UasID      string    `json:"uasId"`
 	StartTime  string    `json:"startTime"`
 	EndTime    string    `json:"endTime"`
+	Format     string    `json:"format"` // xlsx | csv
 	Status     string    `json:"status"`
 	ResultFile string    `json:"resultFile"` // 本地文件路径
 	Error      string    `json:"error"`
@@ -72,7 +73,10 @@ func NewTaskManager(mysql *dao.MySQLDao, influx *dao.InfluxDao, dir, baseURL str
 }
 
 // CreateTask 新建并入队一个导出任务，返回 task id
-func (tm *TaskManager) CreateTask(target, orderID, uasID, startTime, endTime string) (string, error) {
+func (tm *TaskManager) CreateTask(target, orderID, uasID, startTime, endTime, format string) (string, error) {
+	if format == "" {
+		format = "xlsx"
+	}
 	id := fmt.Sprintf("t%d", time.Now().UnixNano())
 	task := &Task{
 		ID:        id,
@@ -81,6 +85,7 @@ func (tm *TaskManager) CreateTask(target, orderID, uasID, startTime, endTime str
 		UasID:     uasID,
 		StartTime: startTime,
 		EndTime:   endTime,
+		Format:    format,
 		Status:    TaskStatusPending,
 		CreatedAt: time.Now(),
 	}
@@ -125,8 +130,14 @@ func (tm *TaskManager) runTask(id string) {
 	// 生成任务目录
 	taskDir := filepath.Join(tm.dir, id)
 	_ = os.MkdirAll(taskDir, 0o755)
-	recordFile := filepath.Join(taskDir, "flightRecord.xlsx")
-	trajFile := filepath.Join(taskDir, "flightTrajectory.xlsx")
+	recExt := "xlsx"
+	trajExt := "xlsx"
+	if task.Format == "csv" {
+		recExt = "csv"
+		trajExt = "csv"
+	}
+	recordFile := filepath.Join(taskDir, "flightRecord."+recExt)
+	trajFile := filepath.Join(taskDir, "flightTrajectory."+trajExt)
 
 	// parse times
 	var err error
@@ -140,6 +151,9 @@ func (tm *TaskManager) runTask(id string) {
 		if useInflux {
 			recs, e := tm.influx.GetFlightDate(st.UTC(), ed.UTC())
 			if e == nil && len(recs) > 0 {
+				if task.Format == "csv" {
+					return ExportMapsToCSV(recs, recordFile)
+				}
 				return dao.ExportFlightRecordsToExcel(recs, recordFile)
 			}
 			// fallback to MySQL
@@ -148,6 +162,9 @@ func (tm *TaskManager) runTask(id string) {
 			return fmt.Errorf("mysql not configured")
 		}
 		// 使用流式导出以减少内存占用
+		if task.Format == "csv" {
+			return tm.mysql.ExportFlightRecordsToCSVStream(task.OrderID, task.UasID, task.StartTime, task.EndTime, recordFile)
+		}
 		return tm.mysql.ExportFlightRecordsToExcelStream(task.OrderID, task.UasID, task.StartTime, task.EndTime, recordFile)
 	}
 
@@ -156,6 +173,9 @@ func (tm *TaskManager) runTask(id string) {
 			return fmt.Errorf("mysql not configured")
 		}
 		// 使用流式导出轨迹点
+		if task.Format == "csv" {
+			return tm.mysql.ExportTrackPointsToCSVStream(task.StartTime, task.EndTime, task.OrderID, trajFile)
+		}
 		return tm.mysql.ExportTrackPointsToExcelStream(task.StartTime, task.EndTime, task.OrderID, trajFile)
 	}
 

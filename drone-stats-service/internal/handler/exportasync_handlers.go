@@ -36,11 +36,15 @@ func CreateExportTaskHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if v, ok := raw["target"].(string); ok && v != "" {
 			target = v
 		}
+		format := "xlsx"
+		if v, ok := raw["format"].(string); ok && v != "" {
+			format = v
+		}
 		if svcCtx.TaskManager == nil {
 			http.Error(w, "TaskManager 未启用", http.StatusInternalServerError)
 			return
 		}
-		id, err := svcCtx.TaskManager.CreateTask(target, req.OrderID, req.UasID, req.StartTime, req.EndTime)
+		id, err := svcCtx.TaskManager.CreateTask(target, req.OrderID, req.UasID, req.StartTime, req.EndTime, format)
 		if err != nil {
 			http.Error(w, "创建任务失败: "+err.Error(), http.StatusInternalServerError)
 			return

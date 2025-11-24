@@ -1,9 +1,13 @@
 package dao
 
 import (
+	"bufio"
 	"database/sql"
 	"drone-stats-service/internal/model"
+	"encoding/csv"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -753,6 +757,234 @@ func (d *MySQLDao) ExportTrackPointsToExcelStream(startTime, endTime, orderID, f
 		return err
 	}
 	return f.SaveAs(filePath)
+}
+
+// ExportFlightRecordsToCSVStream 使用流式写入将 MySQL 中的 flight_records 导出为 csv 文件，减少内存占用
+func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, endTime, filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	bw := bufio.NewWriter(f)
+	defer bw.Flush()
+	w := csv.NewWriter(bw)
+	defer w.Flush()
+
+	// 固定表头顺序，保证列稳定
+	headers := []string{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count"}
+	if err := w.Write(headers); err != nil {
+		return err
+	}
+
+	query := `SELECT id, OrderID, uasID, start_time, end_time, start_lat, start_lng, end_lat, end_lng, distance, battery_used, created_at, payload, expressCount FROM flight_records WHERE 1=1`
+	args := []interface{}{}
+	if orderID != "" {
+		query += " AND OrderID=?"
+		args = append(args, orderID)
+	}
+	if uasID != "" {
+		query += " AND uasID=?"
+		args = append(args, uasID)
+	}
+	if startTime != "" {
+		query += " AND start_time >= ?"
+		args = append(args, startTime)
+	}
+	if endTime != "" {
+		query += " AND end_time <= ?"
+		args = append(args, endTime)
+	}
+	query += " ORDER BY start_time DESC"
+
+	rows, err := d.DB.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			id, payload, expressCount          int
+			orderIDs, uasIDs                   string
+			startTimeT, endTimeT, createdAt    sql.NullTime
+			startLat, startLng, endLat, endLng sql.NullInt64
+			distance, batteryUsed              sql.NullFloat64
+		)
+		if err := rows.Scan(&id, &orderIDs, &uasIDs, &startTimeT, &endTimeT, &startLat, &startLng, &endLat, &endLng, &distance, &batteryUsed, &createdAt, &payload, &expressCount); err != nil {
+			continue
+		}
+		var startLatVal string
+		if startLat.Valid {
+			startLatVal = strconv.FormatFloat(float64(startLat.Int64)/1e7, 'f', -1, 64)
+		} else {
+			startLatVal = ""
+		}
+		var startLngVal string
+		if startLng.Valid {
+			startLngVal = strconv.FormatFloat(float64(startLng.Int64)/1e7, 'f', -1, 64)
+		} else {
+			startLngVal = ""
+		}
+		var endLatVal string
+		if endLat.Valid {
+			endLatVal = strconv.FormatFloat(float64(endLat.Int64)/1e7, 'f', -1, 64)
+		} else {
+			endLatVal = ""
+		}
+		var endLngVal string
+		if endLng.Valid {
+			endLngVal = strconv.FormatFloat(float64(endLng.Int64)/1e7, 'f', -1, 64)
+		} else {
+			endLngVal = ""
+		}
+		payloadVal := strconv.FormatFloat(float64(payload)/10.0, 'f', -1, 64)
+
+		row := []string{
+			strconv.Itoa(id),
+			orderIDs,
+			uasIDs,
+			nullableTimeToString(startTimeT),
+			nullableTimeToString(endTimeT),
+			startLatVal,
+			startLngVal,
+			endLatVal,
+			endLngVal,
+			nullableFloatToString(distance),
+			nullableFloatToString(batteryUsed),
+			nullableTimeToString(createdAt),
+			payloadVal,
+			strconv.Itoa(expressCount),
+		}
+		if err := w.Write(row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExportTrackPointsToCSVStream 使用流式写入将 flight_track_points 导出为 csv 文件
+func (d *MySQLDao) ExportTrackPointsToCSVStream(startTime, endTime, orderID, filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	bw := bufio.NewWriter(f)
+	defer bw.Flush()
+	w := csv.NewWriter(bw)
+	defer w.Flush()
+
+	headers := []string{"ID", "Order ID", "Flight Status", "Time Stamp", "Longitude", "Latitude", "Height Type", "Height", "Altitude", "VS (m/s)", "GS (m/s)", "Course", "SOC", "RM", "Voltage", "Current", "Wind Speed", "Wind Direct", "Temperature", "Humidity"}
+	if err := w.Write(headers); err != nil {
+		return err
+	}
+
+	query := `SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, voltage, current, windSpeed, windDirect, temperture, humidity FROM flight_track_points WHERE 1=1`
+	args := []interface{}{}
+	if orderID != "" {
+		query += " AND orderID = ?"
+		args = append(args, orderID)
+	}
+	if startTime != "" {
+		query += " AND timeStamp >= ?"
+		args = append(args, startTime)
+	}
+	if endTime != "" {
+		query += " AND timeStamp <= ?"
+		args = append(args, endTime)
+	}
+	query += " ORDER BY timeStamp ASC"
+
+	rows, err := d.DB.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			id                                          int64
+			orderIDOut, flightStatus                    string
+			timeStamp                                   sql.NullTime
+			longitude, latitude                         sql.NullInt64
+			heightType, height, altitude                sql.NullInt64
+			VS, GS, course, SOC, RM, voltage, current   sql.NullInt64
+			windSpeed, windDirect, temperture, humidity sql.NullInt64
+		)
+		if err := rows.Scan(&id, &orderIDOut, &flightStatus, &timeStamp, &longitude, &latitude, &heightType, &height, &altitude, &VS, &GS, &course, &SOC, &RM, &voltage, &current, &windSpeed, &windDirect, &temperture, &humidity); err != nil {
+			continue
+		}
+		var lonVal, latVal, vsVal, gsVal string
+		if longitude.Valid {
+			lonVal = strconv.FormatFloat(float64(longitude.Int64)/1e7, 'f', -1, 64)
+		} else {
+			lonVal = ""
+		}
+		if latitude.Valid {
+			latVal = strconv.FormatFloat(float64(latitude.Int64)/1e7, 'f', -1, 64)
+		} else {
+			latVal = ""
+		}
+		if VS.Valid {
+			vsVal = strconv.FormatFloat(float64(VS.Int64)/10.0, 'f', -1, 64)
+		} else {
+			vsVal = ""
+		}
+		if GS.Valid {
+			gsVal = strconv.FormatFloat(float64(GS.Int64)/10.0, 'f', -1, 64)
+		} else {
+			gsVal = ""
+		}
+
+		row := []string{
+			strconv.FormatInt(id, 10),
+			orderIDOut,
+			flightStatus,
+			nullableTimeToString(timeStamp),
+			lonVal,
+			latVal,
+			nullableInt64ToString(heightType),
+			nullableInt64ToString(height),
+			nullableInt64ToString(altitude),
+			vsVal,
+			gsVal,
+			nullableInt64ToString(course),
+			nullableInt64ToString(SOC),
+			nullableInt64ToString(RM),
+			nullableInt64ToString(voltage),
+			nullableInt64ToString(current),
+			nullableInt64ToString(windSpeed),
+			nullableInt64ToString(windDirect),
+			nullableInt64ToString(temperture),
+			nullableInt64ToString(humidity),
+		}
+		if err := w.Write(row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// helpers to convert nullable types used above to string
+func nullableTimeToString(t sql.NullTime) string {
+	if t.Valid {
+		return t.Time.Format("2006-01-02 15:04:05")
+	}
+	return ""
+}
+
+func nullableInt64ToString(n sql.NullInt64) string {
+	if n.Valid {
+		return strconv.FormatInt(n.Int64, 10)
+	}
+	return ""
+}
+
+func nullableFloatToString(n sql.NullFloat64) string {
+	if n.Valid {
+		return strconv.FormatFloat(n.Float64, 'f', -1, 64)
+	}
+	return ""
 }
 
 // helper formatting functions for nullable types

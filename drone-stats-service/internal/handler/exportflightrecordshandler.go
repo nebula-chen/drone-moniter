@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"drone-stats-service/internal/dao"
@@ -33,8 +34,12 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		var raw map[string]interface{}
 		_ = json.Unmarshal(body, &raw)
 		target := "records"
+		format := "xlsx"
 		if v, ok := raw["target"].(string); ok && v != "" {
 			target = v // records | trajectory | both
+		}
+		if v, ok := raw["format"].(string); ok && v != "" {
+			format = strings.ToLower(v)
 		}
 
 		// 解析时间
@@ -56,8 +61,14 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		// 临时文件名
 		tmpDir := os.TempDir()
-		recordFile := filepath.Join(tmpDir, "flightRecord.xlsx")
-		trajFile := filepath.Join(tmpDir, "flightTrajectory.xlsx")
+		recExt := "xlsx"
+		trajExt := "xlsx"
+		if format == "csv" {
+			recExt = "csv"
+			trajExt = "csv"
+		}
+		recordFile := filepath.Join(tmpDir, "flightRecord."+recExt)
+		trajFile := filepath.Join(tmpDir, "flightTrajectory."+trajExt)
 		var toServePath string
 		var serveName string
 
@@ -67,6 +78,9 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			if useInflux && svcCtx.InfluxDao != nil {
 				recs, err := svcCtx.InfluxDao.GetFlightDate(start, end)
 				if err == nil && len(recs) > 0 {
+					if format == "csv" {
+						return export.ExportMapsToCSV(recs, recordFile)
+					}
 					return dao.ExportFlightRecordsToExcel(recs, recordFile)
 				}
 				// 若 influx 失败或无数据，回退到 MySQL
@@ -82,6 +96,9 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			if err != nil {
 				return err
 			}
+			if format == "csv" {
+				return export.ExportMapsToCSV(recs, recordFile)
+			}
 			return dao.ExportFlightRecordsToExcel(recs, recordFile)
 		}
 
@@ -96,6 +113,9 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			if err != nil {
 				return err
 			}
+			if format == "csv" {
+				return export.ExportMapsToCSV(pts, trajFile)
+			}
 			return dao.ExportFlightRecordsToExcel(pts, trajFile)
 		}
 
@@ -107,14 +127,14 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				return
 			}
 			toServePath = recordFile
-			serveName = "flightRecord.xlsx"
+			serveName = "flightRecord." + recExt
 		case "trajectory":
 			if err := exportTrajectory(); err != nil {
 				http.Error(w, "导出 trajectory 失败: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 			toServePath = trajFile
-			serveName = "flightTrajectory.xlsx"
+			serveName = "flightTrajectory." + trajExt
 		case "both":
 			if err := exportRecords(); err != nil {
 				http.Error(w, "导出 records 失败: "+err.Error(), http.StatusInternalServerError)
@@ -147,6 +167,8 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// 设置响应头并返回文件
 		if serveName == "flight_export.zip" {
 			w.Header().Set("Content-Type", "application/zip")
+		} else if strings.HasSuffix(serveName, ".csv") {
+			w.Header().Set("Content-Type", "text/csv")
 		} else {
 			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 		}

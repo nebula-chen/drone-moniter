@@ -2,8 +2,12 @@ package export
 
 import (
 	"archive/zip"
+	"bufio"
+	"encoding/csv"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/xuri/excelize/v2"
@@ -77,6 +81,76 @@ func ExportMapsToExcel(records []map[string]interface{}, filePath string) error 
 	}
 	if err := f.SaveAs(filePath); err != nil {
 		return err
+	}
+	return nil
+}
+
+// ExportMapsToCSV 将通用的 map[string]interface{} 列表导出为 CSV 文件。
+// maps 中的键会被当作表头，按 records[0] 的键顺序写入。
+func ExportMapsToCSV(records []map[string]interface{}, filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	bw := bufio.NewWriter(f)
+	defer bw.Flush()
+	w := csv.NewWriter(bw)
+	defer w.Flush()
+
+	if len(records) == 0 {
+		// 写空文件
+		return nil
+	}
+
+	// 构造表头顺序
+	headers := make([]string, 0, len(records[0]))
+	for k := range records[0] {
+		headers = append(headers, k)
+	}
+	if err := w.Write(headers); err != nil {
+		return err
+	}
+
+	// 写数据
+	for _, rec := range records {
+		row := make([]string, 0, len(headers))
+		for _, h := range headers {
+			v := rec[h]
+			var s string
+			if v == nil {
+				s = ""
+			} else {
+				switch t := v.(type) {
+				case string:
+					s = t
+				case time.Time:
+					s = t.Format("2006-01-02 15:04:05")
+				case float64:
+					s = strconv.FormatFloat(t, 'f', -1, 64)
+				case float32:
+					s = strconv.FormatFloat(float64(t), 'f', -1, 32)
+				case int:
+					s = strconv.Itoa(t)
+				case int64:
+					s = strconv.FormatInt(t, 10)
+				case uint64:
+					s = strconv.FormatUint(t, 10)
+				case bool:
+					if t {
+						s = "true"
+					} else {
+						s = "false"
+					}
+				default:
+					s = fmt.Sprint(v)
+				}
+			}
+			row = append(row, s)
+		}
+		if err := w.Write(row); err != nil {
+			return err
+		}
 	}
 	return nil
 }
