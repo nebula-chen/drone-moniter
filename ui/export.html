@@ -42,9 +42,9 @@
     <div class="row">
       <label for="target">导出类型</label>
       <select id="target">
+        <option value="both">both（两者）</option>
         <option value="records">records（飞行主表）</option>
         <option value="trajectory">trajectory（轨迹点）</option>
-        <option value="both">both（两者）</option>
       </select>
     </div>
     <div class="row">
@@ -56,8 +56,7 @@
     </div>
 
     <div class="actions">
-      <button id="btnSync">立即导出（同步）</button>
-      <button id="btnAsync" class="secondary">后台导出（异步）</button>
+      <button id="btnAsync" class="secondary">后台导出</button>
       <button id="btnClear" class="secondary">清空</button>
     </div>
 
@@ -70,7 +69,6 @@
 
   <script>
     const logEl = document.getElementById('log')
-    const btnSync = document.getElementById('btnSync')
     const btnAsync = document.getElementById('btnAsync')
     const btnClear = document.getElementById('btnClear')
 
@@ -95,40 +93,6 @@
       const endProvided = !!end
       return { startIso, endIso, OrderID, uasID, target, format, endProvided }
     }
-
-    // 同步导出（直接下载）
-    btnSync.addEventListener('click', async ()=>{
-      // 同步导出：只需保证开始时间存在，结束时间可为空（此时前端会使用当前时间）
-      const { startIso, endIso, OrderID, uasID, target, endProvided } = readForm()
-      if(!startIso){ alert('请填写开始时间'); return }
-      if(!endProvided){ appendLog('未填写结束时间，已自动使用当前时间: ' + endIso) }
-      appendLog('开始同步导出...')
-      try{
-  const body = { startTime: startIso, endTime: endIso, OrderID, uasID, target, format }
-        const resp = await fetch('/record/export', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
-        if(!resp.ok){
-          const text = await resp.text()
-          appendLog('同步导出失败: ' + text)
-          return
-        }
-        const disposition = resp.headers.get('Content-Disposition') || ''
-        let filename = 'export.xlsx'
-        const m = /filename=(.*)/i.exec(disposition)
-        if(m){ filename = m[1].replace(/\"/g,'') }
-        const blob = await resp.blob()
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        URL.revokeObjectURL(url)
-        appendLog('同步导出完成，文件已下载：' + filename)
-      }catch(err){
-        appendLog('同步导出异常: ' + err.message)
-      }
-    })
 
     // 异步导出（创建任务并轮询）
     btnAsync.addEventListener('click', async ()=>{
@@ -161,13 +125,36 @@
         }catch(e){ /* ignore parse errors */ }
 
         // 在页面展示下载链接（供手动下载），并尝试在后台轮询状态再自动触发下载。
+        // 创建下载链接并按创建时间排序插入（最新在上）
         const aManual = document.createElement('a')
         aManual.href = downloadUrl
         aManual.target = '_blank'
         aManual.rel = 'noopener'
-        aManual.textContent = '下载结果 ('+data.taskId+')'
+        // 显示 taskId 与创建时间，便于分辨
+        const createdAt = data.createdAt || new Date().toISOString()
+        let createdLabel = ''
+        try{ createdLabel = new Date(createdAt).toLocaleString() }catch(e){ createdLabel = createdAt }
+        aManual.textContent = `[${createdLabel}] 下载结果 (${data.taskId})`
         aManual.className = 'download'
-        document.getElementById('statusArea').appendChild(aManual)
+        aManual.setAttribute('data-created', createdAt)
+        // 插入到 #statusArea 中，保持按创建时间降序（新到旧）
+        const statusArea = document.getElementById('statusArea')
+        const existing = Array.from(statusArea.querySelectorAll('a.download'))
+        const newTs = new Date(createdAt).getTime()
+        let inserted = false
+        for(const ex of existing){
+          const exCreated = ex.getAttribute('data-created') || ''
+          const exTs = exCreated ? new Date(exCreated).getTime() : 0
+          // 想要新到旧排序：如果现有项比新项旧（exTs < newTs），将新项插在它之前
+          if(exTs < newTs){
+            statusArea.insertBefore(aManual, ex)
+            inserted = true
+            break
+          }
+        }
+        if(!inserted){
+          statusArea.appendChild(aManual)
+        }
 
         // 轮询策略：仅在状态 URL 可以通过同源或可转为相对路径访问时使用 fetch；否则放弃轮询并依赖用户手动点击下载
         const canPoll = (() => {

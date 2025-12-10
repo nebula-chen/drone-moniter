@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"drone-stats-service/internal/svc"
 	"drone-stats-service/internal/types"
@@ -60,6 +61,12 @@ func CreateExportTaskHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			"taskId":      id,
 			"statusUrl":   statusUrl,
 			"downloadUrl": downloadUrl,
+		}
+		// 在客户端排序/显示中包含createdAt字段
+		if t, ok := svcCtx.TaskManager.GetTask(id); ok {
+			resp["createdAt"] = t.CreatedAt.Format(time.RFC3339)
+			resp["target"] = t.Target
+			resp["format"] = t.Format
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,7 +78,45 @@ func (tm *TaskManager) CreateTask(target, orderID, uasID, startTime, endTime, fo
 	if format == "" {
 		format = "xlsx"
 	}
-	id := fmt.Sprintf("t%d", time.Now().UnixNano())
+	// 构造符合要求的 task id: 类型字母 + 时间戳(YYYYMMDDhhmmss) + 格式字母
+	// 类型: records->R, trajectory->T, both->B
+	// 格式: .xlsx->X, .csv->C
+	var prefix string
+	switch target {
+	case "records":
+		prefix = "R"
+	case "trajectory":
+		prefix = "T"
+	case "both":
+		prefix = "B"
+	default:
+		prefix = "U" // unknown
+	}
+	var fchar string
+	if strings.ToLower(format) == "csv" {
+		fchar = "C"
+	} else {
+		fchar = "X"
+	}
+	ts := time.Now().Format("20060102150405")
+	id := prefix + ts + fchar
+	// 如果碰巧冲突（同一秒创建了同样类型和格式的任务），追加序号保证唯一
+	tm.mu.RLock()
+	_, exists := tm.tasks[id]
+	tm.mu.RUnlock()
+	if exists {
+		// 简单尝试加后缀 -1,-2 ...
+		for i := 1; ; i++ {
+			try := fmt.Sprintf("%s-%d", id, i)
+			tm.mu.RLock()
+			_, ex := tm.tasks[try]
+			tm.mu.RUnlock()
+			if !ex {
+				id = try
+				break
+			}
+		}
+	}
 	task := &Task{
 		ID:        id,
 		Target:    target,
@@ -141,31 +180,19 @@ func (tm *TaskManager) runTask(id string) {
 
 	// parse times
 	var err error
-	// prefer Influx when duration <=72h and influx available
 	st, _ := time.Parse(time.RFC3339, task.StartTime)
 	ed, _ := time.Parse(time.RFC3339, task.EndTime)
-	useInflux := ed.Sub(st) <= 72*time.Hour && tm.influx != nil
 
 	// helper local functions
 	exportRecords := func() error {
-		if useInflux {
-			recs, e := tm.influx.GetFlightDate(st.UTC(), ed.UTC())
-			if e == nil && len(recs) > 0 {
-				if task.Format == "csv" {
-					return ExportMapsToCSV(recs, recordFile)
-				}
-				return dao.ExportFlightRecordsToExcel(recs, recordFile)
-			}
-			// fallback to MySQL
-		}
 		if tm.mysql == nil {
 			return fmt.Errorf("mysql not configured")
 		}
 		// 使用流式导出以减少内存占用
 		if task.Format == "csv" {
-			return tm.mysql.ExportFlightRecordsToCSVStream(task.OrderID, task.UasID, task.StartTime, task.EndTime, recordFile)
+			return tm.mysql.ExportFlightRecordsToCSVStream(task.OrderID, task.UasID, st.Format("2006-01-02 15:04:05"), ed.Format("2006-01-02 15:04:05"), recordFile)
 		}
-		return tm.mysql.ExportFlightRecordsToExcelStream(task.OrderID, task.UasID, task.StartTime, task.EndTime, recordFile)
+		return tm.mysql.ExportFlightRecordsToExcelStream(task.OrderID, task.UasID, st.Format("2006-01-02 15:04:05"), ed.Format("2006-01-02 15:04:05"), recordFile)
 	}
 
 	exportTrajectory := func() error {

@@ -56,8 +56,7 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		start = start.UTC()
 		end = end.UTC()
 
-		duration := end.Sub(start)
-		useInflux := duration <= 72*time.Hour
+		// 不再优先使用 Influx，records 一律从 MySQL 导出
 
 		// 临时文件名
 		tmpDir := os.TempDir()
@@ -72,34 +71,19 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		var toServePath string
 		var serveName string
 
-		// helper: export records
+		// helper: export records（始终使用 MySQL）
 		exportRecords := func() error {
-			// 尝试使用 influx（仅当 useInflux）否则使用 MySQL
-			if useInflux && svcCtx.InfluxDao != nil {
-				recs, err := svcCtx.InfluxDao.GetFlightDate(start, end)
-				if err == nil && len(recs) > 0 {
-					if format == "csv" {
-						return export.ExportMapsToCSV(recs, recordFile)
-					}
-					return dao.ExportFlightRecordsToExcel(recs, recordFile)
-				}
-				// 若 influx 失败或无数据，回退到 MySQL
-			}
-			// 使用 MySQL
 			if svcCtx.MySQLDao == nil {
 				return fmtError("MySQL 未配置，无法导出")
 			}
 			// MySQL 查询需要格式化时间
 			st := start.Format("2006-01-02 15:04:05")
 			ed := end.Format("2006-01-02 15:04:05")
-			recs, err := svcCtx.MySQLDao.QueryFlightRecords(req.OrderID, req.UasID, st, ed)
-			if err != nil {
-				return err
-			}
+			// 使用 MySQL 的查询/流式接口导出 records
 			if format == "csv" {
-				return export.ExportMapsToCSV(recs, recordFile)
+				return svcCtx.MySQLDao.ExportFlightRecordsToCSVStream(req.OrderID, req.UasID, st, ed, recordFile)
 			}
-			return dao.ExportFlightRecordsToExcel(recs, recordFile)
+			return svcCtx.MySQLDao.ExportFlightRecordsToExcelStream(req.OrderID, req.UasID, st, ed, recordFile)
 		}
 
 		// helper: export trajectory (always from MySQL)
