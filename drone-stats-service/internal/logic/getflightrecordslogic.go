@@ -142,6 +142,44 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	}
 	if exists {
 		l.Logger.Infof("该飞行架次已存在: uav_id=%s, start=%v, end=%v", fr.OrderID, fr.StartTime, fr.EndTime)
+		// 如果主表存在，但轨迹点为空，则尝试回填轨迹点
+		pts, err := l.svcCtx.MySQLDao.GetTrackPointsByRecordId(fr.OrderID)
+		if err != nil {
+			return nil, err
+		}
+		if len(pts) == 0 {
+			// 构造并保存轨迹点（使用字符串 OrderID）
+			var trackPoints []model.FlightTrackPoint
+			for _, r := range flightPoints {
+				point := model.FlightTrackPoint{
+					OrderID:      fr.OrderID,
+					FlightStatus: getString(r, "flightStatus"),
+					TimeStamp:    r["_time"].(time.Time),
+					Longitude:    getInt64(r, "longitude"),
+					Latitude:     getInt64(r, "latitude"),
+					HeightType:   int(getInt64(r, "heightType")),
+					Height:       int(getInt64(r, "height")),
+					Altitude:     int(getInt64(r, "altitude")),
+					VS:           int(getInt64(r, "VS")),
+					GS:           int(getInt64(r, "GS")),
+					Course:       int(getInt64(r, "course")),
+					SOC:          int(getInt64(r, "SOC")),
+					RM:           int(getInt64(r, "RM")),
+					Voltage:      int(getInt64(r, "voltage")),
+					Current:      int(getInt64(r, "current")),
+					WindSpeed:    int(getInt64(r, "windSpeed")),
+					WindDirect:   int(getInt64(r, "windDirect")),
+					Temperture:   int(getInt64(r, "temperture")),
+					Humidity:     int(getInt64(r, "humidity")),
+				}
+				trackPoints = append(trackPoints, point)
+			}
+			if err := l.svcCtx.MySQLDao.SaveTrackPoints(trackPoints); err != nil {
+				fmt.Println("回填轨迹点失败:", err)
+			} else {
+				l.Logger.Infof("已为存在的飞行架次回填轨迹点: %s", fr.OrderID)
+			}
+		}
 		return &types.TrackResponse{}, nil
 	}
 
