@@ -4,6 +4,8 @@ go 1.23.0
 
 toolchain go1.23.11
 
+require go.etcd.io/bbolt v1.4.3
+
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
