@@ -18,3 +18,7 @@ InfluxDBConfig:
 
 MySQL:
   DataSource: "admin:12345678@tcp(mysql:3306)/drone?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai"
+  RetryMaxAttempts: 4
+  RetryBaseDelayMs: 500
+  ReplayerIntervalSec: 10
+  QueuePath: "/app/data/queue.db"

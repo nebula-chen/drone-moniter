@@ -3,10 +3,12 @@ package dao
 import (
 	"bufio"
 	"database/sql"
+	"drone-stats-service/internal/config"
 	"drone-stats-service/internal/model"
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -15,17 +17,68 @@ import (
 )
 
 type MySQLDao struct {
-	DB *sql.DB
+	DB               *sql.DB
+	q                *Queue
+	retryAttempts    int
+	retryBaseDelay   time.Duration
+	replayerInterval time.Duration
+	peekLimit        int
+	queuePath        string
 }
 
-func NewMySQLDao(dsn string) (*MySQLDao, error) {
-	db, err := sql.Open("mysql", dsn)
+func NewMySQLDao(conf config.MySQLConf) (*MySQLDao, error) {
+	db, err := sql.Open("mysql", conf.DataSource)
 	if err != nil {
 		return nil, err
 	}
 	db.SetMaxOpenConns(20) // 适当调大
 	db.SetMaxIdleConns(10)
-	return &MySQLDao{DB: db}, nil
+	// 从配置读取可调参数（带默认值）
+	retryAttempts := conf.RetryMaxAttempts
+	if retryAttempts <= 0 {
+		retryAttempts = 4
+	}
+	baseMs := conf.RetryBaseDelayMs
+	if baseMs <= 0 {
+		baseMs = 500
+	}
+	replayerSec := conf.ReplayerIntervalSec
+	if replayerSec <= 0 {
+		replayerSec = 10
+	}
+	queuePath := conf.QueuePath
+	if queuePath == "" {
+		// 默认到当前工作目录 data
+		if err := os.MkdirAll("./data", 0755); err != nil {
+			return nil, err
+		}
+		queuePath = "./data/queue.db"
+	} else {
+		// 确保目录存在（创建父目录）
+		dir := filepath.Dir(queuePath)
+		if dir != "" && dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				// 忽略，后续 NewQueue 会报错
+			}
+		}
+	}
+
+	q, err := NewQueue(queuePath)
+	if err != nil {
+		return nil, err
+	}
+	dao := &MySQLDao{
+		DB:               db,
+		q:                q,
+		retryAttempts:    retryAttempts,
+		retryBaseDelay:   time.Duration(baseMs) * time.Millisecond,
+		replayerInterval: time.Duration(replayerSec) * time.Second,
+		peekLimit:        20,
+		queuePath:        queuePath,
+	}
+	// 启动后台重放协程
+	go dao.startReplayer()
+	return dao, nil
 }
 
 // 保存飞行记录
@@ -65,6 +118,41 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	if len(points) == 0 {
 		return nil
 	}
+	// 同步重试与指数退避(短期内自动重试4次)，失败后入本地队列
+	var lastErr error
+	maxAttempts := d.retryAttempts
+	baseDelay := d.retryBaseDelay
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if err := d.execInsertTrackPoints(points); err != nil {
+			lastErr = err
+			wait := time.Duration(1<<uint(attempt-1)) * baseDelay
+			fmt.Printf("SaveTrackPoints attempt %d failed: %v, retrying in %v\n", attempt, err, wait)
+			time.Sleep(wait)
+			continue
+		} else {
+			fmt.Println("飞行轨迹写入MySQL成功")
+			return nil
+		}
+	}
+	// all attempts failed -> enqueue to local persistent queue
+	fmt.Println("所有重试失败，写入本地队列以便稍后重放：", lastErr)
+	if d.q != nil {
+		if err := d.q.Enqueue(points); err != nil {
+			fmt.Println("本地队列写入失败:", err)
+			// return original error if enqueue failed
+			return lastErr
+		}
+		return nil
+	}
+	return lastErr
+}
+
+// 执行轨迹点
+// execInsertTrackPoints 执行实际的批量插入（不包含入队逻辑）
+func (d *MySQLDao) execInsertTrackPoints(points []model.FlightTrackPoint) error {
+	if len(points) == 0 {
+		return nil
+	}
 	query :=
 		`INSERT INTO flight_track_points (
 			orderID,
@@ -97,11 +185,80 @@ func (d *MySQLDao) SaveTrackPoints(points []model.FlightTrackPoint) error {
 	query = query[:len(query)-1] // 去掉最后一个逗号
 	_, err := d.DB.Exec(query, vals...)
 	if err != nil {
-		fmt.Println("批量插入轨迹点失败:", err)
-	} else {
-		fmt.Println("飞行轨迹写入MySQL成功")
+		return err
 	}
-	return err
+	return nil
+}
+
+// startReplayer 在后台运行，定期重放队列中的批次并尝试写回 MySQL
+func (d *MySQLDao) startReplayer() {
+	ticker := time.NewTicker(d.replayerInterval)
+	defer ticker.Stop()
+	for range ticker.C {
+		if d.q == nil {
+			continue
+		}
+		batches, err := d.q.PeekBatch(d.peekLimit)
+		if err != nil {
+			fmt.Println("队列读取失败:", err)
+			continue
+		}
+		if len(batches) == 0 {
+			continue
+		}
+		var successKeys []string
+		for k, pts := range batches {
+			if err := d.execInsertTrackPoints(pts); err != nil {
+				fmt.Println("重放批次写入失败:", k, err)
+				// if failed, skip deleting so it will be retried later
+				continue
+			}
+			successKeys = append(successKeys, k)
+		}
+		if len(successKeys) > 0 {
+			if err := d.q.DeleteKeys(successKeys); err != nil {
+				fmt.Println("删除已成功重放的队列键失败:", err)
+			}
+		}
+	}
+}
+
+// DrainQueueOnce 尝试同步重放队列中的批次，直到队列为空或一轮没有进展
+func (d *MySQLDao) DrainQueueOnce() {
+	if d.q == nil {
+		return
+	}
+	for {
+		batches, err := d.q.PeekBatch(50)
+		if err != nil {
+			fmt.Println("DrainQueueOnce: 读取队列失败:", err)
+			return
+		}
+		if len(batches) == 0 {
+			// empty
+			return
+		}
+		progress := 0
+		var successKeys []string
+		for k, pts := range batches {
+			if err := d.execInsertTrackPoints(pts); err != nil {
+				fmt.Println("DrainQueueOnce: 重放批次写入失败:", k, err)
+				continue
+			}
+			successKeys = append(successKeys, k)
+			progress++
+		}
+		if len(successKeys) > 0 {
+			if err := d.q.DeleteKeys(successKeys); err != nil {
+				fmt.Println("DrainQueueOnce: 删除已成功重放的队列键失败:", err)
+			}
+		}
+		if progress == 0 {
+			// couldn't make progress, return to avoid busy loop
+			return
+		}
+		// continue loop until empty
+	}
 }
 
 // 查询总无人机数

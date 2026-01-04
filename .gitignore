@@ -4,5 +4,6 @@
 /drone-stats-service/log
 /autonomous-vehicle/log
 /drone-stats-service/mysql_data
+/drone-stats-service/data
 /influxDB/influxdb2
 

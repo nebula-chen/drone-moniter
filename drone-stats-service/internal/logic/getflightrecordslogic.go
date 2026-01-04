@@ -110,15 +110,27 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 
 	energyUsed := calcEnergyKWh(flightPoints)
 
-	// 计算距离
+	// 计算距离：
+	// 1) 水平距离使用起点与终点的球面距离（基于经纬度）
+	// 2) 垂直距离为全过程上下移动距离（每段海拔变化的绝对值之和）
+	// 最终距离 = 水平距离 + 垂直移动距离（按用户要求将两者相加）
 	var totalDistance float64
+	// 起终点水平球面距离
+	startLat := float64(getInt64(flightPoints[0], "latitude")) / 1e7
+	startLng := float64(getInt64(flightPoints[0], "longitude")) / 1e7
+	endLat := float64(getInt64(flightPoints[len(flightPoints)-1], "latitude")) / 1e7
+	endLng := float64(getInt64(flightPoints[len(flightPoints)-1], "longitude")) / 1e7
+	horizontal := haversine(startLat, startLng, endLat, endLng)
+
+	// 全过程垂直移动距离（海拔单位按原代码除以10）
+	var verticalMovement float64
 	for i := 1; i < len(flightPoints); i++ {
-		lat1 := float64(getInt64(flightPoints[i-1], "latitude")) / 1e7
-		lng1 := float64(getInt64(flightPoints[i-1], "longitude")) / 1e7
-		lat2 := float64(getInt64(flightPoints[i], "latitude")) / 1e7
-		lng2 := float64(getInt64(flightPoints[i], "longitude")) / 1e7
-		totalDistance += haversine(lat1, lng1, lat2, lng2)
+		altPrev := float64(getInt64(flightPoints[i-1], "altitude")) / 10
+		altCurr := float64(getInt64(flightPoints[i], "altitude")) / 10
+		verticalMovement += math.Abs(altCurr - altPrev)
 	}
+
+	totalDistance = horizontal + verticalMovement
 
 	// 存储到flight_records主表，注意经纬度/高度转换
 	fr := model.FlightRecord{
@@ -186,7 +198,9 @@ func (l *GetFlightRecordsLogic) GetFlightRecords(req *types.FlightRecordReq) (re
 	orderID, err := l.svcCtx.MySQLDao.SaveFlightRecordAndGetOrderID(fr)
 	if err != nil {
 		return nil, err
-	}
+	} //else {
+	// 	l.Logger.Infof("当前架次: %s, 最终距离=%.2f, 水平距离=%.2f, 垂直移动距离=%.2f", fr.OrderID, totalDistance, horizontal, verticalMovement)
+	// }
 
 	// 批量构造轨迹点，结构与flight_record.go同步
 	var trackPoints []model.FlightTrackPoint

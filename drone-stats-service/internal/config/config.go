@@ -25,4 +25,9 @@ type InfluxDB struct {
 
 type MySQLConf struct {
 	DataSource string
+	// 以下为可配置的重试与队列参数
+	RetryMaxAttempts    int    `json:"retryMaxAttempts"`    // 最大重试次数
+	RetryBaseDelayMs    int    `json:"retryBaseDelayMs"`    // 指数退避基准延迟（毫秒）
+	ReplayerIntervalSec int    `json:"replayerIntervalSec"` // 后台重放间隔（秒）
+	QueuePath           string `json:"queuePath"`           // 本地队列文件路径
 }

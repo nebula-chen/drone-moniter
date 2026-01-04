@@ -31,6 +31,12 @@ func main() {
 		panic(err)
 	}
 
+	// 启动前同步重放本地队列，确保重启后老数据能被尽快写回
+	if ctx.MySQLDao != nil {
+		fmt.Println("启动时检测并重放本地队列...")
+		ctx.MySQLDao.DrainQueueOnce()
+	}
+
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 

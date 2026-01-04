@@ -23,6 +23,7 @@ services:
       - "8088:8088"
     volumes:
       - ./log:/app/log  # 数据持久化目录
+      - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
     networks:

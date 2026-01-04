@@ -260,7 +260,7 @@
 					<img src="images/ksh33.png">
 				</div>
 				<div class="record_box" id="flight-records-list"></div>
-				<div id="flight-records-pagination" style="font-size: 12px;"></div>
+				<div id="flight-records-pagination" style="font-size: 12px;position: fixed;bottom: 1.5%;right: 5%;"></div>
 			</div>
 		</div>
 		<div class="clear"></div>
@@ -830,8 +830,6 @@
 		var myChartSOCAvg = echarts.init(document.getElementById('main_soc_avg'));
 		myChartSOCAvg.setOption(optionSOCAvg);
 
-		var myChart3 = echarts.init(document.getElementById('main3'));
-		myChart3.setOption(option3);
 		var mySwiper1 = new Swiper('.visual_swiper1', {
 			autoplay: true,//可选选项，自动滑动
 			speed:800,//可选选项，滑动速度

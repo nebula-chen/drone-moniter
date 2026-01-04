@@ -19,7 +19,7 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	influxClient := influxdb2.NewClient("http://"+c.InfluxDBConfig.Host+":"+c.InfluxDBConfig.Port, c.InfluxDBConfig.Token)
 	influxDao := dao.NewInfluxDao(influxClient, c.InfluxDBConfig.Org)
-	mysqlDao, err := dao.NewMySQLDao(c.MySQL.DataSource)
+	mysqlDao, err := dao.NewMySQLDao(c.MySQL)
 	if err != nil {
 		panic(err)
 	}

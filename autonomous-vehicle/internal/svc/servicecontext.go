@@ -22,9 +22,10 @@ import (
 
 // ServiceContext is the context for the service
 type ServiceContext struct {
-	Config config.Config
-	WSHub  *websocket.Hub
-	Dao    *dao.InfluxDao
+	Config   config.Config
+	WSHub    *websocket.Hub
+	Dao      *dao.InfluxDao
+	MySQLDao *dao.MySQLDao
 
 	OnlineDrones sync.Map // key: uasID, value: time.Time
 
@@ -51,6 +52,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config: c,
 		WSHub:  hub,
 		Dao:    dao.NewInfluxDao(client, c.InfluxDBConfig.Org, c.InfluxDBConfig.Bucket),
+	}
+
+	// 初始化 MySQL（如果配置了 DataSource）
+	if c.MySQL.DataSource != "" {
+		mdao, err := dao.NewMySQLDao(c.MySQL.DataSource)
+		if err != nil {
+			panic("MySQL connect error: " + err.Error())
+		}
+		ctx.MySQLDao = mdao
 	}
 
 	// 启动定时清理协程
