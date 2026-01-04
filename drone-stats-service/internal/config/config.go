@@ -6,6 +6,7 @@ type Config struct {
 	rest.RestConf
 	InfluxDBConfig InfluxDB
 	MySQL          MySQLConf
+	BackupConf     BackupConf
 }
 
 type InfluxDB struct {
@@ -30,4 +31,11 @@ type MySQLConf struct {
 	RetryBaseDelayMs    int    `json:"retryBaseDelayMs"`    // 指数退避基准延迟（毫秒）
 	ReplayerIntervalSec int    `json:"replayerIntervalSec"` // 后台重放间隔（秒）
 	QueuePath           string `json:"queuePath"`           // 本地队列文件路径
+}
+
+type BackupConf struct {
+	BackupDir     string `json:"backupDir"`     // 备份存放目录（容器内路径，建议映射到宿主）
+	IntervalDays  int    `json:"intervalDays"`  // 定期备份间隔（天）
+	RetentionDays int    `json:"retentionDays"` // 备份保留天数
+	InfluxBucket  string `json:"influxBucket"`  // 要导出的 InfluxDB bucket 名称
 }

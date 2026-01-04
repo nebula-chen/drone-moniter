@@ -24,6 +24,7 @@ services:
     volumes:
       - ./log:/app/log  # 数据持久化目录
       - ./data:/app/data
+      - ./backups:/app/backups
     environment:
       - TZ=Asia/Shanghai
     networks:

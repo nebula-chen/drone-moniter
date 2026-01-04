@@ -22,3 +22,9 @@ MySQL:
   RetryBaseDelayMs: 500
   ReplayerIntervalSec: 10
   QueuePath: "/app/data/queue.db"
+
+BackupConf:
+  BackupDir: "/app/backups"
+  IntervalDays: 3
+  RetentionDays: 7
+  InfluxBucket: drone_data

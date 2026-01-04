@@ -5,8 +5,12 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"drone-stats-service/internal/backup"
 	"drone-stats-service/internal/config"
 	"drone-stats-service/internal/handler"
 	"drone-stats-service/internal/logic"
@@ -37,8 +41,69 @@ func main() {
 		ctx.MySQLDao.DrainQueueOnce()
 	}
 
+	// 初始化备份管理器并启动定时备份（由服务管理）
+	// 备份配置：优先使用 etc 配置段 BackupConf，否则使用默认值
+	backupDir := "/droneMonitor/backups"
+	intervalDays := 3
+	retention := 7
+	influxBucket := c.InfluxDBConfig.Bucket
+	if c.BackupConf.BackupDir != "" {
+		backupDir = c.BackupConf.BackupDir
+	}
+	if c.BackupConf.IntervalDays > 0 {
+		intervalDays = c.BackupConf.IntervalDays
+	}
+	if c.BackupConf.RetentionDays > 0 {
+		retention = c.BackupConf.RetentionDays
+	}
+	if c.BackupConf.InfluxBucket != "" {
+		influxBucket = c.BackupConf.InfluxBucket
+	}
+
+	// 确保备份目录存在
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		fmt.Println("创建备份目录失败:", err)
+	}
+
+	bm := backup.NewManager(ctx.MySQLDao.DB, ctx.InfluxDao.Client, c.InfluxDBConfig.Org, influxBucket, backupDir, retention)
+	// 启动定期备份协程
+	go func() {
+		ticker := time.NewTicker(time.Duration(intervalDays) * 24 * time.Hour)
+		defer ticker.Stop()
+		fmt.Printf("备份管理器已启动：每 %d 天执行一次备份，备份目录=%s\n", intervalDays, backupDir)
+		for {
+			select {
+			case <-ticker.C:
+				ctx2 := context.Background()
+				fmt.Println("后台定时备份触发: ", time.Now())
+				if err := bm.BackupOnce(ctx2); err != nil {
+					fmt.Println("定时备份失败:", err)
+				} else {
+					fmt.Println("定时备份完成")
+				}
+			}
+		}
+	}()
+
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
+
+	// 捕获系统信号，在优雅关闭前执行一次备份
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigCh
+		fmt.Println("收到退出信号：", sig, "，在退出前执行备份...")
+		ctx2 := context.Background()
+		if err := bm.BackupOnce(ctx2); err != nil {
+			fmt.Println("退出前备份失败:", err)
+		} else {
+			fmt.Println("退出前备份完成")
+		}
+		// 触发 server 停止
+		server.Stop()
+		os.Exit(0)
+	}()
 
 	handler.RegisterHandlers(server, ctx)
 
