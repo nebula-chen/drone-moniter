@@ -709,7 +709,7 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 		return err
 	}
 	// 固定表头顺序，保证列稳定
-	headers := []interface{}{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count"}
+	headers := []interface{}{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
 	if err := w.SetRow("A1", headers); err != nil {
 		return err
 	}
@@ -780,6 +780,10 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 		var payloadVal interface{}
 		payloadVal = float64(payload) / 10.0
 
+		// 查询该架次的轨迹点聚合：平均风向、平均风速、平均湿度、平均温度
+		var avgWindDir, avgWindSpeed, avgHumidity, avgTemp sql.NullFloat64
+		_ = d.DB.QueryRow("SELECT AVG(windDirect), AVG(windSpeed), AVG(temperture), AVG(humidity) FROM flight_track_points WHERE orderID = ?", orderIDs).Scan(&avgWindDir, &avgWindSpeed, &avgHumidity, &avgTemp)
+
 		vals := []interface{}{
 			id,
 			orderIDs,
@@ -795,6 +799,11 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 			nullableTimeFormat(createdAt),
 			payloadVal,
 			expressCount,
+			// 聚合值：使用 nullableFloat64 保持与其他列一致的空值处理
+			nullableFloat64(avgWindDir),
+			nullableFloat64(avgWindSpeed),
+			nullableFloat64(avgHumidity),
+			nullableFloat64(avgTemp),
 		}
 		cell, _ := excelize.CoordinatesToCellName(1, rowIdx)
 		if err := w.SetRow(cell, vals); err != nil {
@@ -929,7 +938,7 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 	defer w.Flush()
 
 	// 固定表头顺序，保证列稳定
-	headers := []string{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count"}
+	headers := []string{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
 	if err := w.Write(headers); err != nil {
 		return err
 	}
@@ -997,6 +1006,10 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 		}
 		payloadVal := strconv.FormatFloat(float64(payload)/10.0, 'f', -1, 64)
 
+		// 查询该架次的轨迹点聚合：平均风向、平均风速、平均湿度、平均温度
+		var avgWindDir, avgWindSpeed, avgHumidity, avgTemp sql.NullFloat64
+		_ = d.DB.QueryRow("SELECT AVG(windDirect), AVG(windSpeed), AVG(temperture), AVG(humidity) FROM flight_track_points WHERE orderID = ?", orderIDs).Scan(&avgWindDir, &avgWindSpeed, &avgHumidity, &avgTemp)
+
 		row := []string{
 			strconv.Itoa(id),
 			orderIDs,
@@ -1012,6 +1025,11 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 			nullableTimeToString(createdAt),
 			payloadVal,
 			strconv.Itoa(expressCount),
+			// 聚合字段转字符串
+			nullableFloatToString(avgWindDir),
+			nullableFloatToString(avgWindSpeed),
+			nullableFloatToString(avgHumidity),
+			nullableFloatToString(avgTemp),
 		}
 		if err := w.Write(row); err != nil {
 			return err
