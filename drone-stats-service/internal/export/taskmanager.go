@@ -182,6 +182,8 @@ func (tm *TaskManager) runTask(id string) {
 	var err error
 	st, _ := time.Parse(time.RFC3339, task.StartTime)
 	ed, _ := time.Parse(time.RFC3339, task.EndTime)
+	st_record := st.Add(8 * time.Hour)
+	ed_record := ed.Add(8 * time.Hour)
 
 	// helper local functions
 	exportRecords := func() error {
@@ -190,9 +192,9 @@ func (tm *TaskManager) runTask(id string) {
 		}
 		// 使用流式导出以减少内存占用
 		if task.Format == "csv" {
-			return tm.mysql.ExportFlightRecordsToCSVStream(task.OrderID, task.UasID, st.Format("2006-01-02 15:04:05"), ed.Format("2006-01-02 15:04:05"), recordFile)
+			return tm.mysql.ExportFlightRecordsToCSVStream(task.OrderID, task.UasID, st_record.Format("2006-01-02 15:04:05"), ed_record.Format("2006-01-02 15:04:05"), recordFile)
 		}
-		return tm.mysql.ExportFlightRecordsToExcelStream(task.OrderID, task.UasID, st.Format("2006-01-02 15:04:05"), ed.Format("2006-01-02 15:04:05"), recordFile)
+		return tm.mysql.ExportFlightRecordsToExcelStream(task.OrderID, task.UasID, st_record.Format("2006-01-02 15:04:05"), ed_record.Format("2006-01-02 15:04:05"), recordFile)
 	}
 
 	exportTrajectory := func() error {

@@ -77,8 +77,8 @@ func ExportFlightRecordsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				return fmtError("MySQL 未配置，无法导出")
 			}
 			// MySQL 查询需要格式化时间
-			st := start.Format("2006-01-02 15:04:05")
-			ed := end.Format("2006-01-02 15:04:05")
+			st := start.Add(8 * time.Hour).Format("2006-01-02 15:04:05")
+			ed := end.Add(8 * time.Hour).Format("2006-01-02 15:04:05")
 			// 使用 MySQL 的查询/流式接口导出 records
 			if format == "csv" {
 				return svcCtx.MySQLDao.ExportFlightRecordsToCSVStream(req.OrderID, req.UasID, st, ed, recordFile)
