@@ -118,7 +118,7 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+	fmt.Printf("%s Starting server at %s:%d...\n", time.Now(), c.Host, c.Port)
 	// processAllUasData(ctx)
 	server.Start()
 }

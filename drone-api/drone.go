@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	"drone-api/internal/config"
 	"drone-api/internal/handler"
@@ -28,6 +29,6 @@ func main() {
 
 	handler.RegisterHandlers(server, ctx)
 
-	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+	fmt.Printf("%s, Starting server at %s:%d...\n", time.Now(), c.Host, c.Port)
 	server.Start()
 }

@@ -35,5 +35,5 @@ RUN apk add --no-cache tzdata \
 # 替换为实际的端口
 EXPOSE 19999
 
-CMD ["sh", "-c", "./app -f etc/drone-api.yaml > /app/log/app.log 2>&1"]
+CMD ["sh", "-c", "./app -f etc/drone-api.yaml >> /app/log/app.log 2>&1"]
 
