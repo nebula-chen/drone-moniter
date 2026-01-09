@@ -709,7 +709,7 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 		return err
 	}
 	// 固定表头顺序，保证列稳定
-	headers := []interface{}{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
+	headers := []interface{}{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Unit Power Consumption (kWh/km/kg)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
 	if err := w.SetRow("A1", headers); err != nil {
 		return err
 	}
@@ -780,6 +780,27 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 		var payloadVal interface{}
 		payloadVal = float64(payload) / 10.0
 
+		// 计算单位耗电：battery_used / (distance/1000) / (payload/10)
+		// distance或payload为0时正常处理，为null按0处理
+		var unitPowerConsumption interface{}
+		var distanceKm float64
+		var payloadKg float64
+		if distance.Valid {
+			distanceKm = distance.Float64 / 1000.0
+		} else {
+			distanceKm = 0
+		}
+		if payload > 0 {
+			payloadKg = float64(payload) / 10.0
+		} else {
+			payloadKg = 1
+		}
+		if batteryUsed.Valid && distanceKm != 0 && payloadKg != 0 {
+			unitPowerConsumption = batteryUsed.Float64 / distanceKm / payloadKg
+		} else {
+			unitPowerConsumption = ""
+		}
+
 		// 查询该架次的轨迹点聚合：平均风向、平均风速、平均湿度、平均温度
 		var avgWindDir, avgWindSpeed, avgHumidity, avgTemp sql.NullFloat64
 		_ = d.DB.QueryRow("SELECT AVG(windDirect), AVG(windSpeed), AVG(temperture), AVG(humidity) FROM flight_track_points WHERE orderID = ?", orderIDs).Scan(&avgWindDir, &avgWindSpeed, &avgHumidity, &avgTemp)
@@ -796,6 +817,7 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 			endLngVal,
 			nullableFloat64(distance),
 			nullableFloat64(batteryUsed),
+			unitPowerConsumption,
 			nullableTimeFormat(createdAt),
 			payloadVal,
 			expressCount,
@@ -938,7 +960,7 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 	defer w.Flush()
 
 	// 固定表头顺序，保证列稳定
-	headers := []string{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
+	headers := []string{"ID", "Order ID", "UAS ID", "Start Time", "End Time", "Start Latitude", "Start Longitude", "End Latitude", "End Longitude", "Distance (m)", "Battery Used (kWh)", "Unit Power Consumption (kWh/km/kg)", "Created At", "Payload (kg)", "Express Count", "Wind Direction", "Avg Wind Speed", "Avg Humidity", "Avg Temperature"}
 	if err := w.Write(headers); err != nil {
 		return err
 	}
@@ -1006,6 +1028,27 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 		}
 		payloadVal := strconv.FormatFloat(float64(payload)/10.0, 'f', -1, 64)
 
+		// 计算单位耗电：battery_used / (distance/1000) / (payload/10)
+		// distance或payload为0时正常处理，为null按0处理
+		var unitPowerConsumption string
+		var distanceKm float64
+		var payloadKg float64
+		if distance.Valid {
+			distanceKm = distance.Float64 / 1000.0
+		} else {
+			distanceKm = 0
+		}
+		if payload > 0 {
+			payloadKg = float64(payload) / 10.0
+		} else {
+			payloadKg = 1
+		}
+		if batteryUsed.Valid && distanceKm != 0 && payloadKg != 0 {
+			unitPowerConsumption = strconv.FormatFloat(batteryUsed.Float64/distanceKm/payloadKg, 'f', -1, 64)
+		} else {
+			unitPowerConsumption = ""
+		}
+
 		// 查询该架次的轨迹点聚合：平均风向、平均风速、平均湿度、平均温度
 		var avgWindDir, avgWindSpeed, avgHumidity, avgTemp sql.NullFloat64
 		_ = d.DB.QueryRow("SELECT AVG(windDirect), AVG(windSpeed), AVG(temperture), AVG(humidity) FROM flight_track_points WHERE orderID = ?", orderIDs).Scan(&avgWindDir, &avgWindSpeed, &avgHumidity, &avgTemp)
@@ -1022,6 +1065,7 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 			endLngVal,
 			nullableFloatToString(distance),
 			nullableFloatToString(batteryUsed),
+			unitPowerConsumption,
 			nullableTimeToString(createdAt),
 			payloadVal,
 			strconv.Itoa(expressCount),
