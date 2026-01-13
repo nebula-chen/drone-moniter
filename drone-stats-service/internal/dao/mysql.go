@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -840,7 +841,7 @@ func (d *MySQLDao) ExportFlightRecordsToExcelStream(orderID, uasID, startTime, e
 }
 
 // ExportTrackPointsToExcelStream 使用流式写入将 flight_track_points 导出为 xlsx 文件
-func (d *MySQLDao) ExportTrackPointsToExcelStream(startTime, endTime, orderID, filePath string) error {
+func (d *MySQLDao) ExportTrackPointsToExcelStream(startTime, endTime, orderID, uasID, filePath string) error {
 	f := excelize.NewFile()
 	sheet := "Sheet1"
 	w, err := f.NewStreamWriter(sheet)
@@ -852,21 +853,60 @@ func (d *MySQLDao) ExportTrackPointsToExcelStream(startTime, endTime, orderID, f
 		return err
 	}
 
+	// 如果传入了 orderID，则按该 orderID 导出；
+	// 否则如果传入了 startTime/endTime，则先从 flight_records 查询满足条件的 OrderID 列表，
+	// 然后按 OrderID IN (...) 导出对应轨迹点，避免导出时间范围内所有架次的点。
 	query := `SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, voltage, current, windSpeed, windDirect, temperture, humidity FROM flight_track_points WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
 		query += " AND orderID = ?"
 		args = append(args, orderID)
+		query += " ORDER BY timeStamp ASC"
+	} else if startTime != "" || endTime != "" {
+		// 查询 flight_records 获取匹配时间段的 OrderID 列表
+		recQuery := `SELECT OrderID FROM flight_records WHERE 1=1`
+		recArgs := []interface{}{}
+		if startTime != "" {
+			recQuery += " AND start_time >= ?"
+			recArgs = append(recArgs, startTime)
+		}
+		if endTime != "" {
+			recQuery += " AND end_time <= ?"
+			recArgs = append(recArgs, endTime)
+		}
+		if uasID != "" {
+			recQuery += " AND uasID=?"
+			recArgs = append(recArgs, uasID)
+		}
+		recQuery += " ORDER BY start_time ASC"
+		rowsRec, err := d.DB.Query(recQuery, recArgs...)
+		if err != nil {
+			return err
+		}
+		defer rowsRec.Close()
+		var orderIDs []string
+		for rowsRec.Next() {
+			var oid string
+			if err := rowsRec.Scan(&oid); err == nil {
+				orderIDs = append(orderIDs, oid)
+			}
+		}
+		if len(orderIDs) == 0 {
+			// 没有匹配的架次，直接返回空结果（不创建文件）
+			return nil
+		}
+		// 构建 IN 占位符
+		placeholders := make([]string, len(orderIDs))
+		for i := range orderIDs {
+			placeholders[i] = "?"
+			args = append(args, orderIDs[i])
+		}
+		query += fmt.Sprintf(" AND orderID IN (%s)", strings.Join(placeholders, ","))
+		query += " ORDER BY timeStamp ASC"
+	} else {
+		// 未提供任何过滤条件：保留原行为（导出全部轨迹点）
+		query += " ORDER BY timeStamp ASC"
 	}
-	if startTime != "" {
-		query += " AND timeStamp >= ?"
-		args = append(args, startTime)
-	}
-	if endTime != "" {
-		query += " AND timeStamp <= ?"
-		args = append(args, endTime)
-	}
-	query += " ORDER BY timeStamp ASC"
 
 	rows, err := d.DB.Query(query, args...)
 	if err != nil {
@@ -1083,7 +1123,7 @@ func (d *MySQLDao) ExportFlightRecordsToCSVStream(orderID, uasID, startTime, end
 }
 
 // ExportTrackPointsToCSVStream 使用流式写入将 flight_track_points 导出为 csv 文件
-func (d *MySQLDao) ExportTrackPointsToCSVStream(startTime, endTime, orderID, filePath string) error {
+func (d *MySQLDao) ExportTrackPointsToCSVStream(startTime, endTime, orderID, uasID, filePath string) error {
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -1099,21 +1139,55 @@ func (d *MySQLDao) ExportTrackPointsToCSVStream(startTime, endTime, orderID, fil
 		return err
 	}
 
+	// 与 Excel 导出中相同：如果传入 orderID 则按该架次导出；否则若传入 startTime/endTime，
+	// 则先从 flight_records 查询满足时间条件的 OrderID 列表，再按 OrderID IN(...) 导出对应轨迹点。
 	query := `SELECT id, orderID, flightStatus, timeStamp, longitude, latitude, heightType, height, altitude, VS, GS, course, SOC, RM, voltage, current, windSpeed, windDirect, temperture, humidity FROM flight_track_points WHERE 1=1`
 	args := []interface{}{}
 	if orderID != "" {
 		query += " AND orderID = ?"
 		args = append(args, orderID)
+		query += " ORDER BY timeStamp ASC"
+	} else if startTime != "" || endTime != "" {
+		recQuery := `SELECT OrderID FROM flight_records WHERE 1=1`
+		recArgs := []interface{}{}
+		if startTime != "" {
+			recQuery += " AND start_time >= ?"
+			recArgs = append(recArgs, startTime)
+		}
+		if endTime != "" {
+			recQuery += " AND end_time <= ?"
+			recArgs = append(recArgs, endTime)
+		}
+		if uasID != "" {
+			recQuery += " AND uasID = ?"
+			recArgs = append(recArgs, uasID)
+		}
+		recQuery += " ORDER BY start_time ASC"
+		rowsRec, err := d.DB.Query(recQuery, recArgs...)
+		if err != nil {
+			return err
+		}
+		defer rowsRec.Close()
+		var orderIDs []string
+		for rowsRec.Next() {
+			var oid string
+			if err := rowsRec.Scan(&oid); err == nil {
+				orderIDs = append(orderIDs, oid)
+			}
+		}
+		if len(orderIDs) == 0 {
+			return nil
+		}
+		placeholders := make([]string, len(orderIDs))
+		for i := range orderIDs {
+			placeholders[i] = "?"
+			args = append(args, orderIDs[i])
+		}
+		query += fmt.Sprintf(" AND orderID IN (%s)", strings.Join(placeholders, ","))
+		query += " ORDER BY timeStamp ASC"
+	} else {
+		query += " ORDER BY timeStamp ASC"
 	}
-	if startTime != "" {
-		query += " AND timeStamp >= ?"
-		args = append(args, startTime)
-	}
-	if endTime != "" {
-		query += " AND timeStamp <= ?"
-		args = append(args, endTime)
-	}
-	query += " ORDER BY timeStamp ASC"
 
 	rows, err := d.DB.Query(query, args...)
 	if err != nil {

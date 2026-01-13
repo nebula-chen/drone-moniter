@@ -203,9 +203,9 @@ func (tm *TaskManager) runTask(id string) {
 		}
 		// 使用流式导出轨迹点
 		if task.Format == "csv" {
-			return tm.mysql.ExportTrackPointsToCSVStream(task.StartTime, task.EndTime, task.OrderID, trajFile)
+			return tm.mysql.ExportTrackPointsToCSVStream(task.StartTime, task.EndTime, task.OrderID, task.UasID, trajFile)
 		}
-		return tm.mysql.ExportTrackPointsToExcelStream(task.StartTime, task.EndTime, task.OrderID, trajFile)
+		return tm.mysql.ExportTrackPointsToExcelStream(task.StartTime, task.EndTime, task.OrderID, task.UasID, trajFile)
 	}
 
 	switch task.Target {
